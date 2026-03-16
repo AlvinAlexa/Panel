@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sports 803 — Control Panel v4</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--ac:#e03030;--ac2:rgba(224,48,48,.13);--acglow:rgba(224,48,48,.45);--bg:#080808;--bg2:#0d0d0d;--bg3:#111;--border:#1e1e1e;--border2:#252525;--text:#f0ede8;--text2:#b8b4b0;--muted:#555;--muted2:#333}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding-bottom:72px}
+input,button,select,textarea{font-family:inherit}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#111}
+::-webkit-scrollbar-thumb{background:#282828;border-radius:2px}
+
+/* ─ LOGIN ─ */
+#login-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column}
+#login-screen.hidden{display:none}
+.login-logo{font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:28px;display:flex;align-items:center;gap:8px}
+.login-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--ac);box-shadow:0 0 10px var(--acglow);animation:blink 2s ease infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.login-box{width:320px;background:var(--bg3);border:1px solid var(--border2);border-radius:16px;padding:26px 22px;position:relative;overflow:hidden}
+.login-box::before{content:'';position:absolute;top:-50px;right:-50px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(224,48,48,.1) 0%,transparent 70%);pointer-events:none}
+.login-title{font-family:'Oswald',sans-serif;font-size:24px;font-weight:700;color:var(--text);margin-bottom:3px}
+.login-sub{font-size:11px;color:var(--muted);margin-bottom:18px}
+.fb-url-row{margin-bottom:14px}
+.fb-url-row label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:5px}
+.fb-url-row input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;outline:none;transition:border-color .15s}
+.fb-url-row input:focus{border-color:var(--ac)}
+.pin-dots-login{display:flex;gap:9px;justify-content:center;margin:0 0 16px}
+.pin-dot-l{width:13px;height:13px;border-radius:50%;border:2px solid var(--border2);background:transparent;transition:all .15s}
+.pin-dot-l.filled{background:var(--ac);border-color:var(--ac);box-shadow:0 0 8px var(--acglow)}
+.pin-dot-l.error{border-color:var(--ac);animation:shake .3s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.pin-key{height:48px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;cursor:pointer;transition:all .1s;-webkit-tap-highlight-color:transparent}
+.pin-key:hover{background:var(--bg3);border-color:var(--border2)}
+.pin-key:active{background:rgba(224,48,48,.12);border-color:rgba(224,48,48,.3);transform:scale(.94)}
+.pin-key.del{color:var(--muted);font-size:16px}
+.login-skip{width:100%;margin-top:7px;padding:9px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
+.login-skip:hover{border-color:var(--border2);color:var(--text2)}
+.login-err{font-size:10px;color:var(--ac);text-align:center;margin-top:10px;min-height:14px;font-weight:600}
+
+/* ─ HEADER ─ */
+#hdr{position:sticky;top:0;z-index:200;background:rgba(8,8,8,.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 14px 0}
+.hdr-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+#app-icon{width:40px;height:40px;background:var(--ac);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:800;color:#fff;text-align:center;line-height:1.3;box-shadow:0 0 16px var(--acglow);flex-shrink:0;letter-spacing:.5px}
+.hdr-info{flex:1;min-width:0}
+.hdr-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
+.v-badge{font-size:9px;background:var(--ac);color:#fff;border-radius:4px;padding:1px 6px;font-weight:700;flex-shrink:0}
+#hdr-sub{font-size:10px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.fb-status{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:var(--muted);padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:7px}
+.fb-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);transition:background .3s}
+.fb-dot.ok{background:#26c96a;box-shadow:0 0 5px rgba(38,201,106,.5)}
+.fb-dot.err{background:var(--ac)}
+.fb-dot.loading{animation:blink .8s infinite}
+#push-btn{background:var(--ac);border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer;box-shadow:0 0 12px var(--acglow);transition:all .25s;white-space:nowrap;flex-shrink:0}
+#push-btn:disabled{opacity:.6;cursor:not-allowed}
+#push-btn.ok{background:#26c96a;box-shadow:0 0 12px rgba(38,201,106,.5)}
+.lock-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px 9px;font-size:11px;cursor:pointer;transition:all .15s}
+.lock-btn:hover{border-color:var(--border2);color:var(--text2)}
+
+/* ─ TABS ─ */
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;padding-bottom:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab-btn{padding:7px 11px;font-size:11px;font-weight:700;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.tab-btn.active{color:var(--ac);border-bottom-color:var(--ac)}
+.tab-btn:hover:not(.active){color:var(--text2)}
+
+/* ─ MAIN ─ */
+.content{padding:14px;max-width:640px;margin:0 auto}
+.tab-pane{display:none;flex-direction:column;gap:10px}
+.tab-pane.active{display:flex}
+
+/* ─ CARDS ─ */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:13px}
+.card.al-red{border-left:3px solid #e03030;background:rgba(224,48,48,.04)}
+.card.al-green{border-left:3px solid #26c96a;background:rgba(38,201,106,.04)}
+.card.al-blue{border-left:3px solid #3b9eff;background:rgba(59,158,255,.04)}
+.card.al-gold{border-left:3px solid #f5c842;background:rgba(245,200,66,.04)}
+.card.al-purple{border-left:3px solid #a855f7;background:rgba(168,85,247,.04)}
+
+/* ─ LABELS ─ */
+.lbl{font-size:11px;font-weight:700;color:var(--text);margin-bottom:3px}
+.lbl-sub{font-size:10px;color:var(--muted);margin-bottom:7px;line-height:1.4}
+.sec-head{font-size:9px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.12em;padding-left:2px;margin-top:4px}
+
+/* ─ INPUTS ─ */
+.si{width:100%;background:#090909;border:1px solid var(--border2);border-radius:7px;padding:9px 11px;font-size:12px;color:var(--text);outline:none;transition:border-color .15s}
+.si:focus{border-color:#3a3a3a}
+.si.pin-s{font-weight:900;font-size:22px;letter-spacing:12px;text-align:center}
+.si.mono{font-family:'JetBrains Mono',monospace;font-size:11px}
+textarea.si{resize:vertical;min-height:68px;line-height:1.5}
+select.si{cursor:pointer}
+
+/* ─ GRID ─ */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+@media(max-width:420px){.g2,.g3{grid-template-columns:1fr}}
+
+/* ─ TOGGLE ─ */
+.tog-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:1px 0}
+.tog-info{flex:1;min-width:0}
+.tog-title{font-size:12px;font-weight:700;color:var(--text)}
+.tog-sub{font-size:10px;color:var(--muted);margin-top:1px;line-height:1.4}
+.toggle{width:36px;height:20px;border-radius:10px;background:#1e1e1e;border:none;cursor:pointer;position:relative;transition:background .18s;flex-shrink:0}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#444;transition:transform .18s,background .18s}
+.toggle.on{background:var(--ac)}
+.toggle.on::after{transform:translateX(16px);background:#fff}
+
+/* ─ STEPS ─ */
+.step-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px;display:flex;gap:10px;align-items:flex-start}
+.step-num{width:24px;height:24px;background:var(--ac);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff;flex-shrink:0;box-shadow:0 0 8px var(--acglow)}
+.step-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px}
+.step-sub{font-size:10px;color:var(--muted);line-height:1.5}
+
+/* ─ CODE ─ */
+.code-block{background:#050505;border:1px solid #181818;border-radius:9px;overflow:hidden}
+.code-hdr{background:#0a0a0a;border-bottom:1px solid #151515;padding:5px 10px;display:flex;justify-content:space-between;align-items:center}
+.code-dots{display:flex;gap:5px}
+.code-dot{width:8px;height:8px;border-radius:50%}
+.copy-btn{background:transparent;border:1px solid #252525;color:#555;border-radius:5px;padding:2px 8px;font-size:9px;font-weight:700;cursor:pointer;transition:all .15s}
+.copy-btn.ok{background:rgba(38,201,106,.1);border-color:#26c96a;color:#26c96a}
+pre.code-body{padding:11px;margin:0;font-size:10px;line-height:1.7;color:#7a8ba5;font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow-y:auto}
+
+/* ─ LEAGUE BTNS ─ */
+.league-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.league-btn{padding:4px 10px;border-radius:16px;font-size:10px;font-weight:700;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.league-btn.on{border-color:var(--ac);background:var(--ac2);color:var(--ac)}
+
+/* ─ SWATCHES ─ */
+.sw-row{display:flex;gap:14px;flex-wrap:wrap}
+.sw-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.sw{width:42px;height:42px;border-radius:50%;border:3px solid transparent;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s}
+.sw.on{border-color:#fff;box-shadow:0 0 16px var(--acglow)}
+.sw-lbl{font-size:9px;font-weight:700;color:var(--muted2);text-transform:capitalize}
+.sw.on+.sw-lbl{color:var(--ac)}
+
+/* ─ NAV EDITOR ─ */
+.nav-item-row{display:flex;align-items:center;gap:7px;background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:9px 10px;margin-bottom:6px}
+.nav-drag{color:var(--muted2);cursor:grab;font-size:14px;flex-shrink:0}
+.nav-icon-inp{width:42px;text-align:center;font-size:15px;padding:6px 4px}
+.nav-label-inp{width:72px}
+.nav-href-inp{flex:1}
+.nav-del{background:rgba(224,48,48,.08);border:1px solid rgba(224,48,48,.2);color:#e03030;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;flex-shrink:0;transition:all .15s}
+.nav-del:hover{background:rgba(224,48,48,.15)}
+.nav-add{width:100%;padding:10px;background:var(--bg2);border:1px dashed #252525;border-radius:9px;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s}
+.nav-add:hover{border-color:var(--ac);color:var(--ac)}
+
+/* ─ PREVIEW ─ */
+#prev-box{background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.prev-ticker{background:#050505;border-bottom:1px solid #151515;padding:5px 10px;display:flex;align-items:center;gap:6px}
+.prev-ticker-badge{background:var(--ac);border-radius:3px;padding:2px 5px;font-size:7px;font-weight:800;color:#fff;flex-shrink:0}
+.prev-ticker-text{font-size:9px;color:var(--text2);white-space:nowrap;overflow:hidden}
+.prev-hdr{background:#0c0c0c;border-bottom:1px solid #151515;padding:8px 11px;display:flex;align-items:center;gap:8px}
+.prev-icon{width:28px;height:28px;background:var(--ac);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:6px;font-weight:800;color:#fff;text-align:center;line-height:1.2;box-shadow:0 0 8px var(--acglow);flex-shrink:0}
+.prev-app-nm{font-size:11px;font-weight:700;color:var(--text)}
+.prev-tagl{font-size:8px;color:var(--muted)}
+.prev-live-bdg{margin-left:auto;background:var(--ac);color:#fff;border-radius:16px;padding:2px 7px;font-size:8px;font-weight:700}
+.prev-body{padding:9px}
+.prev-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.prev-card-hdr{background:var(--bg3);border-bottom:1px solid #151515;padding:4px 8px;display:flex;justify-content:space-between;align-items:center}
+.prev-card-lg{font-size:7px;color:#3a3a3a;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.prev-card-live{background:var(--ac);color:#fff;font-size:7px;border-radius:3px;padding:1px 5px;font-weight:800}
+.prev-match{padding:9px 8px;display:flex;align-items:center;justify-content:space-between}
+.prev-team{display:flex;flex-direction:column;align-items:center;gap:3px}
+.prev-badge{width:22px;height:22px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:11px}
+.prev-tn{font-size:8px;font-weight:700;color:var(--text)}
+.prev-sc{font-size:20px;font-weight:700;color:var(--text);letter-spacing:2px;font-family:'Oswald',sans-serif}
+.prev-sp{color:#2a2a2a;margin:0 4px}
+.prev-watch{background:var(--ac2);border-top:1px solid rgba(224,48,48,.15);padding:6px;text-align:center;font-size:8px;font-weight:800;color:var(--ac)}
+.prev-nav{background:#050505;border-top:1px solid #111;display:flex;padding:5px 0}
+.prev-nav-itm{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:6px;font-weight:700;color:#252525}
+.prev-nav-itm.on{color:var(--ac)}
+.prev-nav-ico{font-size:13px}
+
+/* ─ SPLASH PREVIEW ─ */
+#splash-prev{background:#060606;border:1px solid var(--border);border-radius:12px;overflow:hidden;height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.spl-prev-logo{width:64px;height:64px;border-radius:16px;background:var(--ac);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;text-align:center;line-height:1.3;box-shadow:0 0 24px var(--acglow);margin-bottom:14px}
+.spl-prev-name{font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;color:var(--text);margin-bottom:3px}
+.spl-prev-tag{font-size:9px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px}
+.spl-prev-bar{position:absolute;bottom:0;left:0;height:3px;background:var(--ac);box-shadow:0 0 8px var(--acglow);animation:splbar 1.8s ease-in-out infinite}
+@keyframes splbar{0%{width:0%}60%{width:70%}100%{width:100%}}
+
+/* ─ ANN PREVIEW ─ */
+#ann-prev{padding:9px 12px;display:flex;align-items:center;gap:8px;border-radius:8px;margin-top:10px;transition:all .2s}
+.ann-prev-text{font-size:11px;font-weight:700;flex:1}
+.ann-prev-close{font-size:13px;color:rgba(255,255,255,.45);background:none;border:none;cursor:pointer;flex-shrink:0}
+
+/* ─ SNAPSHOT ─ */
+.snap-row{padding:7px 0;border-bottom:1px solid #131313;display:flex;align-items:center;gap:8px}
+.snap-row:last-child{border-bottom:none}
+.snap-key{font-size:9px;color:var(--ac);font-family:monospace;min-width:88px;flex-shrink:0}
+.snap-val{font-size:11px;font-weight:700;flex:1;word-break:break-all}
+.snap-desc{font-size:9px;color:#3a3a3a;flex-shrink:0}
+
+/* ─ SUGGEST ─ */
+.suggest-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.suggest-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px}
+.suggest-icon{font-size:20px;margin-bottom:6px}
+.suggest-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px}
+.suggest-desc{font-size:10px;color:var(--muted);line-height:1.5}
+.suggest-badge{display:inline-block;font-size:8px;font-weight:700;border-radius:3px;padding:1px 5px;margin-top:5px}
+
+/* ─ ANALYTICS / DATA TABLES ─ */
+.data-table-wrap{overflow-x:auto}
+table.dt{width:100%;border-collapse:collapse;font-size:11px}
+table.dt th{text-align:left;padding:7px 9px;font-size:9px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted2);border-bottom:1px solid var(--border)}
+table.dt td{padding:8px 9px;border-bottom:1px solid rgba(255,255,255,.03);color:var(--text2);vertical-align:middle}
+table.dt td strong{color:var(--text);font-weight:700}
+table.dt tr:hover td{background:rgba(255,255,255,.02)}
+.td-mono{font-family:'JetBrains Mono',monospace;font-size:10px}
+.bar-cell{display:flex;align-items:center;gap:7px}
+.bar-track{flex:1;height:5px;background:var(--bg2);border-radius:3px;overflow:hidden;min-width:60px}
+.bar-fill{height:100%;border-radius:3px;background:var(--ac);transition:width .5s ease}
+
+/* ─ ERR ITEM ─ */
+.err-item{background:rgba(224,48,48,.04);border:1px solid rgba(224,48,48,.1);border-radius:9px;padding:9px 12px;margin-bottom:7px}
+.err-msg{font-size:11px;font-weight:600;color:#f08080;margin-bottom:3px;font-family:'JetBrains Mono',monospace}
+.err-meta{font-size:9px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+
+/* ─ PIN DISPLAY ─ */
+.pin-display-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;position:relative;margin-bottom:12px}
+.pin-display-val{font-family:'Oswald',sans-serif;font-size:36px;font-weight:700;color:var(--text);letter-spacing:.25em}
+.pin-reveal-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;transition:color .15s}
+.pin-reveal-btn:hover{color:var(--text)}
+
+/* ─ SEC ITEM ─ */
+.sec-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(245,200,66,.04);border:1px solid rgba(245,200,66,.1);border-radius:9px;margin-bottom:7px}
+.sec-item-icon{font-size:16px;flex-shrink:0}
+.sec-item-title{font-size:11px;font-weight:700;color:#f5c842}
+.sec-item-meta{font-size:9px;color:var(--muted)}
+
+/* ─ JSON BOX ─ */
+.json-box{background:#050505;border:1px solid var(--border);border-radius:9px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#7a8ba5;overflow-x:auto;white-space:pre;max-height:280px;overflow-y:auto;line-height:1.6}
+
+/* ─ CHART BAR ─ */
+.chart-bar-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px}
+.chart-bar-label{width:110px;flex-shrink:0;color:var(--text2);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chart-bar-track{flex:1;height:5px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.chart-bar-fill{height:100%;border-radius:3px;background:var(--ac);transition:width .6s ease}
+.chart-bar-val{width:36px;text-align:right;flex-shrink:0;font-size:10px;font-weight:700;color:var(--text)}
+
+/* ─ BOTTOM BAR ─ */
+#bbar{position:fixed;bottom:0;left:0;right:0;background:rgba(5,5,5,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:8px 12px;display:flex;align-items:center;gap:8px;z-index:200}
+#bb-icon{width:28px;height:28px;background:var(--ac);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:6px;font-weight:800;color:#fff;text-align:center;line-height:1.3;flex-shrink:0}
+#bb-nm{font-size:10px;font-weight:700}
+#bb-url{font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
+#reset-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px 9px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s}
+#reset-btn:hover{border-color:#333;color:var(--text2)}
+#bb-push{background:var(--ac);border:none;color:#fff;border-radius:8px;padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer;box-shadow:0 0 12px var(--acglow);transition:all .2s;white-space:nowrap;flex-shrink:0}
+#bb-push.ok{background:#26c96a;box-shadow:0 0 12px rgba(38,201,106,.5)}
+
+/* ─ TOAST ─ */
+#toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%) translateY(8px);background:#141414;border-radius:20px;padding:8px 16px;font-size:11px;font-weight:700;color:var(--text);box-shadow:0 8px 28px rgba(0,0,0,.9);z-index:9999;white-space:nowrap;opacity:0;transition:all .22s;pointer-events:none;max-width:calc(100vw - 28px);text-align:center;border:1px solid #222}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ─ MISC ─ */
+kbd{background:#181818;border:1px solid #252525;border-radius:4px;padding:1px 5px;font-size:10px}
+code.il{background:#151515;border-radius:4px;padding:1px 5px;font-size:10px;color:var(--ac);font-family:monospace}
+.info-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg2);border-radius:8px;font-size:11px;color:#7a7672;border:1px solid var(--border)}
+.info-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.div{height:1px;background:#141414;margin:3px 0}
+.abtn{padding:11px;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer;border:none;transition:all .15s;width:100%}
+.abtn-green{background:#071207;border:1px solid rgba(38,201,106,.25)!important;color:#26c96a}
+.abtn-green:hover{background:#0a1f0a}
+.abtn-blue{background:#05050f;border:1px solid rgba(59,158,255,.25)!important;color:#3b9eff}
+.abtn-blue:hover{background:#08081a}
+.abtn-red{background:#120505;border:1px solid rgba(224,48,48,.25)!important;color:#e03030}
+.abtn-red:hover{background:#1e0707}
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:middle;margin-right:4px}
+.empty-state{text-align:center;padding:32px 16px;color:var(--muted);font-size:11px}
+.empty-state .ei{font-size:28px;display:block;margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-logo"><div class="login-logo-dot"></div>Sports 803 Control Panel</div>
+  <div class="login-box">
+    <div class="login-title">Enter PIN</div>
+    <div class="login-sub">VIP access required to continue</div>
+    <div class="fb-url-row">
+      <label>Firebase Database URL</label>
+      <input id="login-fb-url" type="text" value="https://sports-803-1b806-default-rtdb.firebaseio.com" placeholder="https://your-project-default-rtdb.firebaseio.com"/>
+    </div>
+    <div class="pin-dots-login" id="login-pin-dots">
+      <div class="pin-dot-l"></div><div class="pin-dot-l"></div>
+      <div class="pin-dot-l"></div><div class="pin-dot-l"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-key" data-d="1">1</button><button class="pin-key" data-d="2">2</button><button class="pin-key" data-d="3">3</button>
+      <button class="pin-key" data-d="4">4</button><button class="pin-key" data-d="5">5</button><button class="pin-key" data-d="6">6</button>
+      <button class="pin-key" data-d="7">7</button><button class="pin-key" data-d="8">8</button><button class="pin-key" data-d="9">9</button>
+      <button class="pin-key del" data-d="del">⌫</button><button class="pin-key" data-d="0">0</button><button class="pin-key del" data-d="clr">✕</button>
+    </div>
+    <button class="login-skip" onclick="loginSkip()">Skip Firebase — Use local config only</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     APP
+════════════════════════════════ -->
+<div id="app" style="display:none">
+
+<!-- HEADER -->
+<div id="hdr">
+  <div class="hdr-top">
+    <div id="app-icon">SPORTS<br/>803</div>
+    <div class="hdr-info">
+      <div class="hdr-title">Control Panel <span class="v-badge">v4</span></div>
+      <div id="hdr-sub">Loading…</div>
+    </div>
+    <div class="hdr-right">
+      <div class="fb-status"><div class="fb-dot loading" id="fb-dot"></div><span id="fb-status-txt">Connecting</span></div>
+      <button id="push-btn" onclick="pushFB()">🚀 Push Live</button>
+      <button class="lock-btn" onclick="lockPanel()">🔒</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="sw('settings',this)">⚙️ Settings</button>
+    <button class="tab-btn" onclick="sw('theme',this)">🎨 Theme</button>
+    <button class="tab-btn" onclick="sw('splash',this)">✨ Splash</button>
+    <button class="tab-btn" onclick="sw('nav',this)">🧭 Menus</button>
+    <button class="tab-btn" onclick="sw('ads',this)">💰 Ads</button>
+    <button class="tab-btn" onclick="sw('content',this)">📝 Content</button>
+    <button class="tab-btn" onclick="sw('alerts',this)">📣 Alerts</button>
+    <button class="tab-btn" onclick="sw('seo',this)">🔍 SEO</button>
+    <button class="tab-btn" onclick="sw('firebase',this)">🔥 Firebase</button>
+    <button class="tab-btn" onclick="sw('integrate',this)">📋 Integrate</button>
+    <button class="tab-btn" onclick="sw('schedule',this)">📅 Schedule</button>
+    <button class="tab-btn" onclick="sw('analytics',this)">📊 Analytics</button>
+    <button class="tab-btn" onclick="sw('polls',this)">🗳️ Polls</button>
+    <button class="tab-btn" onclick="sw('streams',this)">🎥 Streams</button>
+    <button class="tab-btn" onclick="sw('language',this)">🌍 Language</button>
+    <button class="tab-btn" onclick="sw('commentary',this)">🎙️ Commentary</button>
+    <button class="tab-btn" onclick="sw('views',this)">👁 Views</button>
+    <button class="tab-btn" onclick="sw('shares',this)">📢 Shares</button>
+    <button class="tab-btn" onclick="sw('security',this)">🔐 Security</button>
+    <button class="tab-btn" onclick="sw('errors',this)">⚠️ Errors</button>
+    <button class="tab-btn" onclick="sw('rawcfg',this)">{ } Raw</button>
+    <button class="tab-btn" onclick="sw('more',this)">💡 More</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div class="content">
+
+<!-- ══ SETTINGS ══ -->
+<div class="tab-pane active" id="tab-settings">
+  <div class="sec-head">Core Configuration</div>
+  <div class="card al-red">
+    <div class="lbl">Site URL</div><div class="lbl-sub">Your Blogger blog full URL</div>
+    <input class="si" id="cfg-SITE_URL" type="url" placeholder="https://yoursite.blogspot.com" oninput="ch()"/>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="lbl">VIP PIN</div><div class="lbl-sub">4-digit exclusive PIN</div>
+      <input class="si pin-s" id="cfg-VIP_PIN" maxlength="4" placeholder="8033" oninput="ch()"/>
+    </div>
+    <div class="card">
+      <div class="lbl">GA4 Tracking ID</div><div class="lbl-sub">Google Analytics 4</div>
+      <input class="si" id="cfg-GA_ID" placeholder="G-XXXXXXXXXX" oninput="ch()"/>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="lbl">VIP Label</div><div class="lbl-sub">Blogger label for exclusive posts</div>
+      <input class="si" id="cfg-VIP_LABEL" placeholder="app-vip" oninput="ch()"/>
+    </div>
+    <div class="card">
+      <div class="lbl">Live Stream Label</div><div class="lbl-sub">Blogger label for live posts</div>
+      <input class="si" id="cfg-LIVE_LABEL" placeholder="Live Stream" oninput="ch()"/>
+    </div>
+  </div>
+  <div class="card">
+    <div class="lbl">App Link <span style="font-weight:400;color:var(--muted)">(optional)</span></div>
+    <input class="si" id="cfg-APP_LINK" type="url" placeholder="https://play.google.com/store/…" oninput="ch()"/>
+  </div>
+  <div class="sec-head">App Branding</div>
+  <div class="g2">
+    <div class="card"><div class="lbl">App Name</div><input class="si" id="cfg-app_name" placeholder="Sports 803" oninput="ch()"/></div>
+    <div class="card"><div class="lbl">Tagline</div><input class="si" id="cfg-app_tagline" placeholder="Free Live Sports" oninput="ch()"/></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="lbl">Watch Live Label</div><input class="si" id="cfg-watch_live_label" placeholder="Watch Live" oninput="ch()"/></div>
+    <div class="card"><div class="lbl">OneSignal App ID</div><input class="si" id="cfg-onesignal_id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx" oninput="ch()"/></div>
+  </div>
+  <div class="sec-head">Social Links</div>
+  <div class="card">
+    <div class="g2">
+      <div><div class="lbl" style="margin-bottom:4px">🐦 Twitter / X</div><input class="si" id="cfg-social_twitter" placeholder="https://x.com/yourhandle" oninput="ch()"/></div>
+      <div><div class="lbl" style="margin-bottom:4px">📘 Facebook</div><input class="si" id="cfg-social_facebook" placeholder="https://facebook.com/yourpage" oninput="ch()"/></div>
+      <div><div class="lbl" style="margin-bottom:4px">▶️ YouTube</div><input class="si" id="cfg-social_youtube" placeholder="https://youtube.com/…" oninput="ch()"/></div>
+      <div><div class="lbl" style="margin-bottom:4px">💬 WhatsApp Group</div><input class="si" id="cfg-social_whatsapp" placeholder="https://chat.whatsapp.com/…" oninput="ch()"/></div>
+    </div>
+  </div>
+  <div class="sec-head">Ticker Leagues</div>
+  <div class="card">
+    <div class="lbl">Active Leagues in Live Ticker</div>
+    <div class="lbl-sub">Toggle which leagues appear in the score strip</div>
+    <div class="league-grid" id="league-grid"></div>
+  </div>
+</div>
+
+<!-- ══ THEME ══ -->
+<div class="tab-pane" id="tab-theme">
+  <div class="sec-head">Accent Colour</div>
+  <div class="card"><div class="sw-row" id="sw-row"></div></div>
+  <div class="sec-head">Heading Font</div>
+  <div class="card">
+    <div class="lbl-sub">Used for scores, titles and panel headings throughout the app</div>
+    <select class="si" id="cfg-font_head" onchange="ch()">
+      <option value="Oswald">Oswald (Default)</option>
+      <option value="Barlow Condensed">Barlow Condensed</option>
+      <option value="Bebas Neue">Bebas Neue</option>
+      <option value="Russo One">Russo One</option>
+      <option value="Anton">Anton</option>
+    </select>
+  </div>
+  <div class="sec-head">Live Preview</div>
+  <div id="prev-box">
+    <div class="prev-ticker"><div class="prev-ticker-badge">● LIVE</div><div class="prev-ticker-text">Man City <span style="color:var(--ac);font-weight:700">2–1</span> Arsenal &nbsp;|&nbsp; PSG <span style="color:var(--ac);font-weight:700">0–0</span> Real Madrid</div></div>
+    <div class="prev-hdr">
+      <div class="prev-icon" id="pv-icon">S</div>
+      <div><div class="prev-app-nm" id="pv-name">Sports 803</div><div class="prev-tagl" id="pv-tag">Free Live Sports</div></div>
+      <div class="prev-live-bdg">📺 Live</div>
+    </div>
+    <div class="prev-body">
+      <div class="prev-card">
+        <div class="prev-card-hdr"><span class="prev-card-lg">PREMIER LEAGUE</span><span class="prev-card-live">LIVE</span></div>
+        <div class="prev-match">
+          <div class="prev-team"><div class="prev-badge">⚽</div><div class="prev-tn">Liverpool</div></div>
+          <div class="prev-sc">2<span class="prev-sp">–</span>1</div>
+          <div class="prev-team"><div class="prev-badge">⚽</div><div class="prev-tn">Chelsea</div></div>
+        </div>
+        <div class="prev-watch" id="pv-watch">📺 Watch Live on Sports 803</div>
+      </div>
+    </div>
+    <div class="prev-nav">
+      <div class="prev-nav-itm"><div class="prev-nav-ico">🏠</div>Home</div>
+      <div class="prev-nav-itm"><div class="prev-nav-ico">📺</div>Live</div>
+      <div class="prev-nav-itm on"><div class="prev-nav-ico">⚽</div>Scores</div>
+      <div class="prev-nav-itm"><div class="prev-nav-ico">🔖</div>Saved</div>
+      <div class="prev-nav-itm"><div class="prev-nav-ico">🔔</div>Alerts</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SPLASH ══ -->
+<div class="tab-pane" id="tab-splash">
+  <div class="sec-head">Live Preview</div>
+  <div id="splash-prev">
+    <div class="spl-prev-logo" id="spl-logo">SPORTS<br/>803</div>
+    <div class="spl-prev-name" id="spl-name">Sports <span style="color:var(--ac)">803</span></div>
+    <div class="spl-prev-tag" id="spl-tag">Free Live Sports</div>
+    <div class="spl-prev-bar"></div>
+  </div>
+  <div class="sec-head">Splash Settings</div>
+  <div class="card">
+    <div class="tog-row">
+      <div class="tog-info"><div class="tog-title">Enable Splash Screen</div><div class="tog-sub">Animated intro when PWA opens</div></div>
+      <button class="toggle on" id="tog-splash_enabled" onclick="togCfg('splash_enabled',this)"></button>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="lbl">Logo Text</div><input class="si" id="cfg-splash_logo" placeholder="SPORTS 803" oninput="ch();updSplash()"/></div>
+    <div class="card"><div class="lbl">App Name on Splash</div><input class="si" id="cfg-splash_name" placeholder="Sports 803" oninput="ch();updSplash()"/></div>
+  </div>
+  <div class="card"><div class="lbl">Splash Tagline</div><input class="si" id="cfg-splash_tagline" placeholder="Free Live Sports" oninput="ch();updSplash()"/></div>
+  <div class="card"><div class="lbl">Duration (ms)</div><div class="lbl-sub">1500–3000ms recommended</div><input class="si" id="cfg-splash_duration" type="number" min="1000" max="5000" step="100" placeholder="1900" oninput="ch()"/></div>
+</div>
+
+<!-- ══ MENUS ══ -->
+<div class="tab-pane" id="tab-nav">
+  <div class="card al-blue">
+    <div style="font-size:12px;font-weight:700;color:#3b9eff;margin-bottom:3px">🧭 Navigation Editor</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.6">Edit icon, label and URL for each nav item. Changes go live with 🚀 Push Live.</div>
+  </div>
+  <div class="sec-head">Bottom Nav Items</div>
+  <div id="nav-editor"></div>
+  <button class="nav-add" onclick="addNavItem()">＋ Add Navigation Item</button>
+  <div class="sec-head">Header Quick Link</div>
+  <div class="card">
+    <div class="lbl-sub">Optional link in the app header</div>
+    <div class="g2">
+      <input class="si" id="cfg-top_link_label" placeholder="Label e.g. 🔴 Watch Now" oninput="ch()"/>
+      <input class="si" id="cfg-top_link_url" placeholder="https://…" oninput="ch()"/>
+    </div>
+  </div>
+  <div class="sec-head">Footer</div>
+  <div class="card"><div class="lbl">Footer Text</div><input class="si" id="cfg-footer_text" placeholder="© 2025 Sports 803 · Free Live Sports" oninput="ch()"/></div>
+  <div class="card"><div class="lbl">Footer Links</div><div class="lbl-sub">Format: Label|URL, separated by commas</div><textarea class="si" id="cfg-footer_links" rows="2" placeholder="About Us|/p/about.html, Privacy Policy|/p/privacy.html" oninput="ch()"></textarea></div>
+</div>
+
+<!-- ══ ADS ══ -->
+<div class="tab-pane" id="tab-ads">
+  <div class="card al-gold">
+    <div style="font-size:12px;font-weight:700;color:#f5c842;margin-bottom:3px">💰 Ads &amp; Monetisation</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.6">Your AdSense account <code class="il" style="color:#f5c842">ca-pub-5622139873916803</code> is pre-filled.</div>
+  </div>
+  <div class="sec-head">Google AdSense</div>
+  <div class="card"><div class="lbl">Publisher ID</div><input class="si" id="cfg-adsense_id" placeholder="ca-pub-XXXXXXXXXXXXXXXX" oninput="ch()"/></div>
+  <div class="card">
+    <div class="tog-row">
+      <div class="tog-info"><div class="tog-title">Auto Ads</div><div class="tog-sub">Google automatically finds best positions</div></div>
+      <button class="toggle" id="tog-adsense_auto" onclick="togCfg('adsense_auto',this)"></button>
+    </div>
+  </div>
+  <div class="sec-head">Ad Placements</div>
+  <div class="card">
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div class="tog-row"><div class="tog-info"><div class="tog-title">📢 Top Banner Ad</div><div class="tog-sub">Below the header / ticker strip</div></div><button class="toggle" id="tog-ad_top" onclick="togCfg('ad_top',this)"></button></div>
+      <div class="div"></div>
+      <div class="tog-row"><div class="tog-info"><div class="tog-title">📰 In-Feed Ad</div><div class="tog-sub">Between posts in the blog feed</div></div><button class="toggle" id="tog-ad_infeed" onclick="togCfg('ad_infeed',this)"></button></div>
+      <div class="div"></div>
+      <div class="tog-row"><div class="tog-info"><div class="tog-title">📄 In-Article Ad</div><div class="tog-sub">Inside post content between paragraphs</div></div><button class="toggle" id="tog-ad_article" onclick="togCfg('ad_article',this)"></button></div>
+      <div class="div"></div>
+      <div class="tog-row"><div class="tog-info"><div class="tog-title">📌 Sticky Bottom Ad</div><div class="tog-sub">Fixed banner above the bottom nav</div></div><button class="toggle" id="tog-ad_sticky" onclick="togCfg('ad_sticky',this)"></button></div>
+    </div>
+  </div>
+  <div class="sec-head">Ad Slot IDs</div>
+  <div class="card">
+    <div class="lbl-sub">Get from AdSense → Ads → By ad unit</div>
+    <div class="g2" style="margin-top:6px">
+      <div><div class="lbl" style="margin-bottom:4px">Top Banner</div><input class="si" id="cfg-ad_slot_top" placeholder="1234567890" oninput="ch()"/></div>
+      <div><div class="lbl" style="margin-bottom:4px">In-Feed</div><input class="si" id="cfg-ad_slot_infeed" placeholder="1234567890" oninput="ch()"/></div>
+      <div><div class="lbl" style="margin-bottom:4px">In-Article</div><input class="si" id="cfg-ad_slot_article" placeholder="1234567890" oninput="ch()"/></div>
+      <div><div class="lbl" style="margin-bottom:4px">Sticky Banner</div><input class="si" id="cfg-ad_slot_sticky" placeholder="1234567890" oninput="ch()"/></div>
+    </div>
+  </div>
+  <div class="sec-head">Custom Ad Code</div>
+  <div class="card"><div class="lbl-sub">Paste any custom ad HTML — appears below the live ticker strip</div><textarea class="si" id="cfg-ad_custom" rows="4" placeholder="&lt;!-- Paste custom ad code here --&gt;" oninput="ch()"></textarea></div>
+  <div class="sec-head">Ad-Free Mode</div>
+  <div class="card">
+    <div class="tog-row">
+      <div class="tog-info"><div class="tog-title">VIP Users — Ad Free</div><div class="tog-sub">Hide all ads for users who've unlocked VIP access</div></div>
+      <button class="toggle" id="tog-ad_free_vip" onclick="togCfg('ad_free_vip',this)"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONTENT ══ -->
+<div class="tab-pane" id="tab-content">
+  <div class="sec-head">Announcement Bar</div>
+  <div class="card">
+    <div class="tog-row" style="margin-bottom:11px">
+      <div class="tog-info"><div class="tog-title">Show Announcement Bar</div><div class="tog-sub">Coloured banner shown at the top of every page</div></div>
+      <button class="toggle" id="tog-ann_enabled" onclick="togCfg('ann_enabled',this)"></button>
+    </div>
+    <div class="lbl">Announcement Text</div>
+    <input class="si" id="cfg-ann_text" placeholder="🔴 LIVE NOW: Champions League Final — Watch Free!" oninput="ch();updAnn()" style="margin-bottom:8px"/>
+    <div class="lbl">Link URL <span style="font-weight:400;color:var(--muted)">(optional)</span></div>
+    <input class="si" id="cfg-ann_link" placeholder="https://…" oninput="ch()" style="margin-bottom:8px"/>
+    <div class="lbl">Bar Colour</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px" id="ann-colors">
+      <div class="ann-csw" data-c="#e03030" style="width:26px;height:26px;border-radius:50%;background:#e03030;cursor:pointer;border:2px solid white;flex-shrink:0"></div>
+      <div class="ann-csw" data-c="#26c96a" style="width:26px;height:26px;border-radius:50%;background:#26c96a;cursor:pointer;border:2px solid transparent;flex-shrink:0"></div>
+      <div class="ann-csw" data-c="#3b9eff" style="width:26px;height:26px;border-radius:50%;background:#3b9eff;cursor:pointer;border:2px solid transparent;flex-shrink:0"></div>
+      <div class="ann-csw" data-c="#f5c842" style="width:26px;height:26px;border-radius:50%;background:#f5c842;cursor:pointer;border:2px solid transparent;flex-shrink:0"></div>
+      <div class="ann-csw" data-c="#a855f7" style="width:26px;height:26px;border-radius:50%;background:#a855f7;cursor:pointer;border:2px solid transparent;flex-shrink:0"></div>
+    </div>
+    <div id="ann-prev" style="background:rgba(224,48,48,.1);border:1px solid rgba(224,48,48,.25)"><div class="ann-prev-text" id="ann-prev-text">🔴 LIVE NOW: Champions League Final — Watch Free!</div><button class="ann-prev-close">✕</button></div>
+  </div>
+  <div class="sec-head">Breaking News Ticker</div>
+  <div class="card">
+    <div class="tog-row" style="margin-bottom:9px"><div class="tog-info"><div class="tog-title">Enable Breaking News Text</div><div class="tog-sub">Custom text scrolls when no live games are on</div></div><button class="toggle" id="tog-breaking_enabled" onclick="togCfg('breaking_enabled',this)"></button></div>
+    <textarea class="si" id="cfg-breaking_text" rows="2" placeholder="🚨 Breaking: Transfer window opens midnight · Man City sign new striker" oninput="ch()"></textarea>
+  </div>
+  <div class="sec-head">Featured Post</div>
+  <div class="card">
+    <div class="tog-row" style="margin-bottom:9px"><div class="tog-info"><div class="tog-title">Pin a Featured Post</div><div class="tog-sub">Highlight one post at the top of the home feed</div></div><button class="toggle" id="tog-featured_enabled" onclick="togCfg('featured_enabled',this)"></button></div>
+    <div class="lbl" style="margin-bottom:4px">Post Title</div>
+    <input class="si" id="cfg-featured_title" placeholder="Champions League Final — Full Match Preview" oninput="ch()" style="margin-bottom:8px"/>
+    <div class="lbl" style="margin-bottom:4px">Post URL</div>
+    <input class="si" id="cfg-featured_url" placeholder="https://sports803livestream.blogspot.com/…" oninput="ch()"/>
+  </div>
+  <div class="sec-head">Match of the Day Banner</div>
+  <div class="card">
+    <div class="tog-row" style="margin-bottom:9px"><div class="tog-info"><div class="tog-title">Show Match of the Day</div><div class="tog-sub">Hero banner highlighting today's big fixture</div></div><button class="toggle" id="tog-motd_enabled" onclick="togCfg('motd_enabled',this)"></button></div>
+    <div class="g2">
+      <div><div class="lbl" style="margin-bottom:4px">Home Team</div><input class="si" id="cfg-motd_home" placeholder="Liverpool" oninput="ch()"/></div>
+      <div><div class="lbl" style="margin-bottom:4px">Away Team</div><input class="si" id="cfg-motd_away" placeholder="Chelsea" oninput="ch()"/></div>
+    </div>
+    <div class="lbl" style="margin-bottom:4px;margin-top:8px">Kick-off Time</div>
+    <input class="si" id="cfg-motd_time" placeholder="Today · 20:00 GMT" oninput="ch()" style="margin-bottom:8px"/>
+    <div class="lbl" style="margin-bottom:4px">Watch Link</div>
+    <input class="si" id="cfg-motd_url" placeholder="https://sports803livestream.blogspot.com/…" oninput="ch()"/>
+  </div>
+  <div class="sec-head">Custom CSS</div>
+  <div class="card"><div class="lbl-sub">Injected on every page — override any style on your site</div><textarea class="si" id="cfg-custom_css" rows="5" placeholder="/* Custom CSS */&#10;.post-title { font-size: 20px; }" oninput="ch()"></textarea></div>
+</div>
+
+<!-- ══ ALERTS ══ -->
+<div class="tab-pane" id="tab-alerts">
+  <div class="card al-purple">
+    <div style="font-size:12px;font-weight:700;color:#a855f7;margin-bottom:3px">📣 Push Notifications via OneSignal</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.6">Send match alerts to all subscribers. Add your App ID and REST API Key below.</div>
+  </div>
+  <div class="sec-head">OneSignal Keys</div>
+  <div class="card">
+    <div class="g2">
+      <div>
+        <div class="lbl" style="margin-bottom:4px">App ID</div>
+        <div class="lbl-sub">Settings → Keys &amp; IDs → App ID</div>
+        <input class="si" id="cfg-onesignal_id2" placeholder="xxxxxxxx-xxxx-xxxx-xxxx" oninput="syncOneSignal()"/>
+      </div>
+      <div>
+        <div class="lbl" style="margin-bottom:4px">REST API Key</div>
+        <div class="lbl-sub">Settings → Keys &amp; IDs → REST API Key</div>
+        <input class="si mono" id="os-rest-key" type="password" placeholder="Paste REST API Key here" oninput="saveRestKey()"/>
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <button onclick="toggleRestKeyVis()" class="abtn" style="background:var(--bg2);border:1px solid var(--border)!important;color:var(--muted);font-size:10px;padding:7px 12px;width:auto;border-radius:7px">👁 Show / Hide Key</button>
+    </div>
+    <div class="card al-gold" style="margin-top:10px;padding:9px 12px">
+      <div style="font-size:10px;color:var(--text2);line-height:1.6">⚠️ The REST API Key is stored in <code class="il">localStorage</code> on your device only — it is never pushed to Firebase. Clear browser data if you use a shared computer.</div>
+    </div>
+  </div>
+  <div class="sec-head">Compose Alert</div>
+  <div class="card">
+    <div class="lbl">Notification Title</div>
+    <input class="si" id="notif-title" placeholder="🔴 LIVE NOW — Liverpool vs Chelsea" style="margin-bottom:8px"/>
+    <div class="lbl">Message</div>
+    <textarea class="si" id="notif-body" rows="2" placeholder="Match just kicked off! Tap to watch live for free 📺" style="margin-bottom:8px"></textarea>
+    <div class="lbl" style="margin-bottom:4px">Link <span style="font-weight:400;color:var(--muted)">(optional)</span></div>
+    <input class="si" id="notif-url" placeholder="https://sports803livestream.blogspot.com/…" style="margin-bottom:12px"/>
+    <button onclick="sendNotif()" style="width:100%;padding:11px;background:var(--ac);border:none;color:#fff;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 0 10px var(--acglow)">📣 Send Push Notification</button>
+  </div>
+  <div class="sec-head">Quick Alert Templates</div>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div class="info-row" style="cursor:pointer" onclick="fillNotif('🔴 LIVE NOW — Match Starting!','A live stream just started. Tap to watch free 📺','')"><div class="info-dot" style="background:#e03030"></div><span style="flex:1">🔴 Match Starting Alert</span><span style="font-size:10px;color:#3a3a3a">Use →</span></div>
+    <div class="info-row" style="cursor:pointer" onclick="fillNotif('⚽ GOAL! Match Update','A goal has been scored! Check the live score now 📊','')"><div class="info-dot" style="background:#26c96a"></div><span style="flex:1">⚽ Goal Scored Alert</span><span style="font-size:10px;color:#3a3a3a">Use →</span></div>
+    <div class="info-row" style="cursor:pointer" onclick="fillNotif('🏆 Full Time — Match Result','Final whistle blown. See the result and highlights.','')"><div class="info-dot" style="background:#f5c842"></div><span style="flex:1">🏆 Full Time Alert</span><span style="font-size:10px;color:#3a3a3a">Use →</span></div>
+    <div class="info-row" style="cursor:pointer" onclick="fillNotif('📅 Reminder — Kicks Off in 1 Hour','Don\'t miss it! Tune in for free 📺','')"><div class="info-dot" style="background:#3b9eff"></div><span style="flex:1">📅 Pre-Match Reminder</span><span style="font-size:10px;color:#3a3a3a">Use →</span></div>
+  </div>
+  <div class="sec-head">Notification Settings</div>
+  <div class="card">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="tog-row"><div class="tog-info"><div class="tog-title">Show Notification Prompt</div><div class="tog-sub">Ask new visitors to enable alerts</div></div><button class="toggle on" id="tog-notif_prompt" onclick="togCfg('notif_prompt',this)"></button></div>
+      <div class="div"></div>
+      <div class="tog-row"><div class="tog-info"><div class="tog-title">Notify Bar on Homepage</div><div class="tog-sub">"Enable alerts" bar at top of the feed</div></div><button class="toggle on" id="tog-notif_bar" onclick="togCfg('notif_bar',this)"></button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SEO ══ -->
+<div class="tab-pane" id="tab-seo">
+  <div class="card al-blue"><div style="font-size:12px;font-weight:700;color:#3b9eff;margin-bottom:3px">🔍 SEO &amp; Discovery</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Control how your site appears on Google, WhatsApp previews, and social media shares.</div></div>
+  <div class="sec-head">Meta Tags</div>
+  <div class="card"><div class="lbl">Site Description</div><textarea class="si" id="cfg-seo_description" rows="2" placeholder="Watch free live sports streams, scores, and exclusive content on Sports 803." oninput="ch()"></textarea></div>
+  <div class="card"><div class="lbl">SEO Keywords</div><input class="si" id="cfg-seo_keywords" placeholder="live sports, free stream, football, premier league, watch live" oninput="ch()"/></div>
+  <div class="sec-head">Social Share Preview (OG Tags)</div>
+  <div class="card">
+    <div class="lbl">OG Title</div><input class="si" id="cfg-og_title" placeholder="Sports 803 — Free Live Sports Streams" oninput="ch()" style="margin-bottom:8px"/>
+    <div class="lbl">OG Description</div><textarea class="si" id="cfg-og_description" rows="2" placeholder="Watch live football, cricket, tennis and more — free, no signup." oninput="ch()" style="margin-bottom:8px"></textarea>
+    <div class="lbl">OG Image URL</div><div class="lbl-sub">1200×630px recommended</div><input class="si" id="cfg-og_image" placeholder="https://yoursite.com/og-image.jpg" oninput="ch()"/>
+  </div>
+  <div class="sec-head">PWA Manifest</div>
+  <div class="card">
+    <div class="g2">
+      <div><div class="lbl" style="margin-bottom:4px">PWA Short Name</div><input class="si" id="cfg-pwa_short_name" placeholder="Sports803" oninput="ch()"/></div>
+      <div><div class="lbl" style="margin-bottom:4px">Theme Colour</div><input class="si" id="cfg-pwa_theme_color" placeholder="#080808" oninput="ch()"/></div>
+    </div>
+  </div>
+  <div class="sec-head">Indexing</div>
+  <div class="card"><div class="tog-row"><div class="tog-info"><div class="tog-title">Allow Google Indexing</div><div class="tog-sub">Let Google crawl and index your site</div></div><button class="toggle on" id="tog-allow_indexing" onclick="togCfg('allow_indexing',this)"></button></div></div>
+</div>
+
+<!-- ══ FIREBASE ══ -->
+<div class="tab-pane" id="tab-firebase">
+  <div class="card al-green"><div style="font-size:12px;font-weight:700;color:#26c96a;margin-bottom:3px">✅ Firebase Pre-configured</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Database <code class="il" style="color:#26c96a">sports-803-1b806-default-rtdb</code> is pre-filled. Click Test Connection to verify.</div></div>
+  <div class="step-card"><div class="step-num">1</div><div><div class="step-title">Go to console.firebase.google.com</div><div class="step-sub">Open your project → Build → Realtime Database → Rules</div></div></div>
+  <div class="step-card"><div class="step-num">2</div><div><div class="step-title">Set .read and .write to true</div><div class="step-sub">Click Publish — required for the panel to push and site to pull</div></div></div>
+  <div class="sec-head">Firebase Settings</div>
+  <div class="card"><div class="lbl">Database URL</div><input class="si" id="fb-url" type="url" placeholder="https://your-project-default-rtdb.firebaseio.com" oninput="fbCh()"/></div>
+  <div class="card"><div class="lbl">Database Secret <span style="font-weight:400;color:var(--muted)">(optional)</span></div><div class="lbl-sub">Only needed if NOT in Test Mode</div><input class="si" id="fb-token" type="password" placeholder="Leave blank for Test Mode"/></div>
+  <div class="g2">
+    <button class="abtn abtn-green" onclick="testConn()">🔌 Test Connection</button>
+    <button class="abtn abtn-blue" onclick="pullFB()">📥 Load from Firebase</button>
+  </div>
+  <div class="g2" style="margin-top:0">
+    <button class="abtn abtn-red" onclick="doReset()">↩ Reset to Defaults</button>
+    <button class="abtn" style="background:#0a0a0a;border:1px solid var(--border)!important;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;border-radius:9px;padding:11px" onclick="exportJSON()">📤 Export JSON</button>
+  </div>
+  <div class="card" style="margin-top:0"><div style="font-size:11px;color:var(--muted);line-height:1.6">ℹ️ Test mode is fine — no sensitive user data is stored in Firebase.</div></div>
+</div>
+
+<!-- ══ INTEGRATE ══ -->
+<div class="tab-pane" id="tab-integrate">
+  <div class="card al-blue"><div style="font-size:12px;font-weight:700;color:#3b9eff;margin-bottom:3px">📋 One-Time Blogger Setup</div><div style="font-size:11px;color:var(--text2);line-height:1.6">You only need to do this <strong style="color:#fff">once</strong>.</div></div>
+  <div class="step-card"><div class="step-num">1</div><div><div class="step-title">Set Firebase Rules to public read/write</div><div class="step-sub">console.firebase.google.com → Build → Realtime Database → Rules → set both to true → Publish</div></div></div>
+  <div class="step-card"><div class="step-num">2</div><div><div class="step-title">Paste Sports 803 v10 code above &lt;/body&gt;</div><div class="step-sub">The widget has the config loader built in</div></div></div>
+  <div class="step-card"><div class="step-num">3</div><div><div class="step-title">Push Live from this panel</div><div class="step-sub">Click 🚀 Push Live — your site updates within seconds</div></div></div>
+  <div class="sec-head">Firebase Config Loader</div>
+  <div id="snip-loader"></div>
+  <div class="sec-head">Settings Block</div>
+  <div id="snip-settings"></div>
+  <div class="sec-head">Current Config Snapshot</div>
+  <div class="card" id="cfg-snapshot"></div>
+</div>
+
+<!-- ══ SCHEDULE ══ -->
+<div class="tab-pane" id="tab-schedule">
+  <div class="card al-blue"><div style="font-size:12px;font-weight:700;color:#3b9eff;margin-bottom:3px">📅 Match Schedule</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Create and publish your weekly fixtures list instantly.</div></div>
+  <div class="sec-head">Schedule Settings</div>
+  <div class="card"><div class="tog-row"><div class="tog-info"><div class="tog-title">Show Schedule Widget</div><div class="tog-sub">Displays fixtures panel on homepage</div></div><button class="toggle" id="tog-schedule_enabled" onclick="togCfg('schedule_enabled',this)"></button></div></div>
+  <div class="g2">
+    <div class="card"><div class="lbl">Section Title</div><input class="si" id="cfg-schedule_title" placeholder="This Week's Fixtures" oninput="ch()"/></div>
+    <div class="card"><div class="lbl">Default Competition</div><input class="si" id="cfg-schedule_default_comp" placeholder="Premier League" oninput="ch()"/></div>
+  </div>
+  <div class="sec-head">Fixtures <span style="font-weight:400;color:var(--muted);font-size:9px">— up to 20 matches</span></div>
+  <div id="fixtures-editor"></div>
+  <button class="nav-add" onclick="addFixture()">＋ Add Fixture</button>
+  <div class="sec-head">Preview</div>
+  <div class="card" id="sched-preview" style="padding:10px"></div>
+</div>
+
+<!-- ══ ANALYTICS ══ -->
+<div class="tab-pane" id="tab-analytics">
+  <div class="card al-green"><div style="font-size:12px;font-weight:700;color:#26c96a;margin-bottom:3px">📊 Site Analytics</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Real-time stats pulled from Firebase — no GA4 API needed.</div></div>
+  <div class="sec-head">Live Stats</div>
+  <div class="g2" id="analytics-stats">
+    <div class="card" style="text-align:center"><div style="font-size:28px;font-weight:800;color:var(--ac)" id="an-sessions">—</div><div style="font-size:10px;color:var(--muted);margin-top:3px">Total Sessions</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:28px;font-weight:800;color:#3b9eff" id="an-pageviews">—</div><div style="font-size:10px;color:var(--muted);margin-top:3px">Page Views</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:28px;font-weight:800;color:#26c96a" id="an-installs">—</div><div style="font-size:10px;color:var(--muted);margin-top:3px">PWA Installs</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:28px;font-weight:800;color:#f5c842" id="an-vip">—</div><div style="font-size:10px;color:var(--muted);margin-top:3px">VIP Unlocks</div></div>
+  </div>
+  <div class="sec-head">Device Breakdown</div>
+  <div class="card" id="an-devices"><div style="font-size:11px;color:var(--muted)">Click Refresh to load latest data from Firebase</div></div>
+  <div class="sec-head">Top Posts (Last 7 Days)</div>
+  <div class="card" id="an-posts"><div style="font-size:11px;color:var(--muted)">Tracking begins once widget is deployed</div></div>
+  <button class="abtn abtn-blue" style="margin-top:0" onclick="loadAnalytics()">🔄 Refresh Analytics</button>
+  <div class="card"><div class="tog-row"><div class="tog-info"><div class="tog-title">Enable Analytics Collection</div><div class="tog-sub">Widget tracks sessions, page views, devices and installs</div></div><button class="toggle on" id="tog-analytics_enabled" onclick="togCfg('analytics_enabled',this)"></button></div></div>
+</div>
+
+<!-- ══ POLLS ══ -->
+<div class="tab-pane" id="tab-polls">
+  <div class="card al-purple"><div style="font-size:12px;font-weight:700;color:#a855f7;margin-bottom:3px">🗳️ Live Poll Creator</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Create match polls — readers vote directly on your site. Results update live via Firebase.</div></div>
+  <div class="sec-head">Active Poll</div>
+  <div class="card">
+    <div class="tog-row" style="margin-bottom:10px"><div class="tog-info"><div class="tog-title">Show Poll Widget</div><div class="tog-sub">Displays on homepage and inside labelled posts</div></div><button class="toggle" id="tog-poll_enabled" onclick="togCfg('poll_enabled',this)"></button></div>
+    <div class="lbl">Poll Question</div><input class="si" id="cfg-poll_question" placeholder="Who wins the Champions League Final?" oninput="ch();updPollPreview()" style="margin-bottom:8px"/>
+    <div class="lbl">Option A</div><input class="si" id="cfg-poll_a" placeholder="Real Madrid" oninput="ch();updPollPreview()" style="margin-bottom:6px"/>
+    <div class="lbl">Option B</div><input class="si" id="cfg-poll_b" placeholder="Manchester City" oninput="ch();updPollPreview()" style="margin-bottom:6px"/>
+    <div class="lbl">Option C <span style="font-weight:400;color:var(--muted)">(optional)</span></div><input class="si" id="cfg-poll_c" placeholder="Draw / Other" oninput="ch();updPollPreview()" style="margin-bottom:6px"/>
+    <div class="lbl">Option D <span style="font-weight:400;color:var(--muted)">(optional)</span></div><input class="si" id="cfg-poll_d" placeholder="" oninput="ch();updPollPreview()" style="margin-bottom:10px"/>
+    <div class="lbl">Poll End Date</div><input class="si" id="cfg-poll_end" type="date" oninput="ch()" style="margin-bottom:10px"/>
+    <button onclick="resetPollVotes()" class="abtn abtn-red" style="margin-top:0">🗑️ Reset Vote Counts</button>
+  </div>
+  <div class="sec-head">Live Results</div>
+  <div class="card" id="poll-results-live"><div style="font-size:11px;color:var(--muted)">Push a poll to see live vote counts here</div></div>
+  <div class="sec-head">Preview</div>
+  <div class="card" id="poll-preview" style="padding:12px"></div>
+</div>
+
+<!-- ══ STREAMS ══ -->
+<div class="tab-pane" id="tab-streams">
+  <div class="card al-red"><div style="font-size:12px;font-weight:700;color:#e03030;margin-bottom:3px">🎥 Stream Manager</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Manage your live stream sources. Push Live to update links instantly.</div></div>
+  <div class="sec-head">Stream Settings</div>
+  <div class="card"><div class="tog-row"><div class="tog-info"><div class="tog-title">Show Stream Sources Panel</div></div><button class="toggle" id="tog-streams_enabled" onclick="togCfg('streams_enabled',this)"></button></div></div>
+  <div class="card"><div class="lbl">Currently Live Match</div><input class="si" id="cfg-stream_headline" placeholder="🔴 LIVE: Liverpool vs Chelsea — UCL Final" oninput="ch()"/></div>
+  <div class="sec-head">Stream Sources <span style="font-weight:400;color:var(--muted);font-size:9px">— up to 8 sources</span></div>
+  <div id="streams-editor"></div>
+  <button class="nav-add" onclick="addStream()">＋ Add Stream Source</button>
+  <div class="sec-head">Backup Streams</div>
+  <div class="card"><div class="lbl-sub">Shown if all main streams go down</div><textarea class="si" id="cfg-stream_backup" rows="3" placeholder="🔗 Backup 1: https://example.com/stream1" oninput="ch()"></textarea></div>
+  <div class="sec-head">Access Control</div>
+  <div class="card"><div class="tog-row"><div class="tog-info"><div class="tog-title">VIP-Only Streams</div><div class="tog-sub">Require VIP PIN unlock to view stream links</div></div><button class="toggle" id="tog-streams_vip_only" onclick="togCfg('streams_vip_only',this)"></button></div></div>
+</div>
+
+<!-- ══ LANGUAGE ══ -->
+<div class="tab-pane" id="tab-language">
+  <div class="card al-gold"><div style="font-size:12px;font-weight:700;color:#f5c842;margin-bottom:3px">🌍 Multi-Language</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Translate your app UI. Visitors can switch language without a page reload.</div></div>
+  <div class="sec-head">Language Settings</div>
+  <div class="card">
+    <div class="tog-row" style="margin-bottom:10px"><div class="tog-info"><div class="tog-title">Enable Language Switcher</div><div class="tog-sub">Shows a 🌍 button in the app header</div></div><button class="toggle" id="tog-lang_enabled" onclick="togCfg('lang_enabled',this)"></button></div>
+    <div class="lbl">Default Language</div>
+    <select class="si" id="cfg-lang_default" onchange="ch();updLangPreview()">
+      <option value="en">🇬🇧 English</option><option value="sw">🇰🇪 Swahili</option><option value="fr">🇫🇷 French</option><option value="ar">🇸🇦 Arabic</option><option value="pt">🇧🇷 Portuguese</option><option value="es">🇪🇸 Spanish</option>
+    </select>
+  </div>
+  <div class="sec-head">Enabled Languages</div>
+  <div class="card">
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <div class="tog-row"><div class="tog-info"><div class="tog-title">🇬🇧 English</div></div><button class="toggle on" id="tog-lang_en" onclick="togLang('en',this)"></button></div>
+      <div class="div"></div>
+      <div class="tog-row"><div class="tog-info"><div class="tog-title">🇰🇪 Swahili</div><div class="tog-sub">Kiswahili — popular in East Africa</div></div><button class="toggle" id="tog-lang_sw" onclick="togLang('sw',this)"></button></div>
+      <div class="div"></div>
+      <div class="tog-row"><div class="tog-info"><div class="tog-title">🇫🇷 French</div></div><button class="toggle" id="tog-lang_fr" onclick="togLang('fr',this)"></button></div>
+      <div class="div"></div>
+      <div class="tog-row"><div class="tog-info"><div class="tog-title">🇸🇦 Arabic</div><div class="tog-sub">RTL layout auto-applied</div></div><button class="toggle" id="tog-lang_ar" onclick="togLang('ar',this)"></button></div>
+      <div class="div"></div>
+      <div class="tog-row"><div class="tog-info"><div class="tog-title">🇧🇷 Portuguese</div></div><button class="toggle" id="tog-lang_pt" onclick="togLang('pt',this)"></button></div>
+      <div class="div"></div>
+      <div class="tog-row"><div class="tog-info"><div class="tog-title">🇪🇸 Spanish</div></div><button class="toggle" id="tog-lang_es" onclick="togLang('es',this)"></button></div>
+    </div>
+  </div>
+  <div class="sec-head">Custom Translations</div>
+  <div class="card">
+    <div class="lbl-sub">Override any UI string. Format: <code class="il">key|translation</code> per line</div>
+    <div style="margin-bottom:6px"><div class="lbl" style="margin-bottom:4px">Swahili Overrides</div><textarea class="si" id="cfg-lang_sw_custom" rows="3" placeholder="Watch Live|Tazama Moja Kwa Moja&#10;Scores|Matokeo" oninput="ch()"></textarea></div>
+    <div><div class="lbl" style="margin-bottom:4px">French Overrides</div><textarea class="si" id="cfg-lang_fr_custom" rows="3" placeholder="Watch Live|Regarder En Direct" oninput="ch()"></textarea></div>
+  </div>
+  <div class="sec-head">Preview</div>
+  <div class="card" id="lang-preview" style="padding:12px"></div>
+</div>
+
+<!-- ══ COMMENTARY ══ -->
+<div class="tab-pane" id="tab-commentary">
+  <div class="card al-purple"><div style="font-size:12px;font-weight:700;color:#a855f7;margin-bottom:3px">🎙️ Live Commentary</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Push live text commentary updates — readers see them in real time.</div></div>
+  <div class="sec-head">Commentary Settings</div>
+  <div class="card">
+    <div class="tog-row" style="margin-bottom:10px"><div class="tog-info"><div class="tog-title">Enable Live Commentary Panel</div></div><button class="toggle" id="tog-commentary_enabled" onclick="togCfg('commentary_enabled',this)"></button></div>
+    <div class="lbl">Match Title</div><input class="si" id="cfg-commentary_match" placeholder="Liverpool vs Chelsea — UCL Final" oninput="ch()" style="margin-bottom:8px"/>
+    <div class="lbl">Match Status</div>
+    <select class="si" id="cfg-commentary_status" onchange="ch()">
+      <option value="pre">Pre-Match</option><option value="live">🔴 LIVE</option><option value="ht">Half Time</option><option value="ft">Full Time</option>
+    </select>
+  </div>
+  <div class="g2">
+    <div class="card" style="text-align:center">
+      <div style="font-size:24px;font-weight:800;color:var(--ac)" id="comm-home-score">0</div>
+      <div style="font-size:10px;color:var(--muted)" id="comm-home-name">Home</div>
+      <div style="display:flex;gap:5px;margin-top:6px">
+        <button onclick="adjScore('home',-1)" style="flex:1;padding:5px;background:#1a0505;border:1px solid #3a1010;border-radius:6px;color:#e03030;font-weight:800;cursor:pointer;font-size:14px">−</button>
+        <button onclick="adjScore('home',1)" style="flex:1;padding:5px;background:#051a05;border:1px solid #103a10;border-radius:6px;color:#26c96a;font-weight:800;cursor:pointer;font-size:14px">+</button>
+      </div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:24px;font-weight:800;color:var(--ac)" id="comm-away-score">0</div>
+      <div style="font-size:10px;color:var(--muted)" id="comm-away-name">Away</div>
+      <div style="display:flex;gap:5px;margin-top:6px">
+        <button onclick="adjScore('away',-1)" style="flex:1;padding:5px;background:#1a0505;border:1px solid #3a1010;border-radius:6px;color:#e03030;font-weight:800;cursor:pointer;font-size:14px">−</button>
+        <button onclick="adjScore('away',1)" style="flex:1;padding:5px;background:#051a05;border:1px solid #103a10;border-radius:6px;color:#26c96a;font-weight:800;cursor:pointer;font-size:14px">+</button>
+      </div>
+    </div>
+  </div>
+  <div class="sec-head">Post a Commentary Update</div>
+  <div class="card">
+    <div class="g2" style="margin-bottom:8px">
+      <div><div class="lbl" style="margin-bottom:4px">Minute</div><input class="si" id="comm-min" placeholder="45'" type="text"/></div>
+      <div><div class="lbl" style="margin-bottom:4px">Type</div>
+        <select class="si" id="comm-type">
+          <option value="update">📝 Update</option><option value="goal">⚽ GOAL!</option><option value="yellowcard">🟨 Yellow Card</option><option value="redcard">🟥 Red Card</option><option value="sub">🔄 Substitution</option><option value="var">📺 VAR Review</option><option value="ht">🔔 Half Time</option><option value="ft">🏁 Full Time</option><option value="ko">🟢 Kick Off</option>
+        </select>
+      </div>
+    </div>
+    <div class="lbl" style="margin-bottom:4px">Commentary Text</div>
+    <textarea class="si" id="comm-text" rows="2" placeholder="Salah fires it into the top corner from 25 yards! Stunning strike!" style="margin-bottom:8px"></textarea>
+    <button onclick="pushComment()" style="width:100%;padding:11px;background:var(--ac);border:none;color:#fff;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 0 10px var(--acglow)">📡 Push Update Live</button>
+  </div>
+  <div class="sec-head">Quick Templates</div>
+  <div style="display:flex;flex-direction:column;gap:5px">
+    <div class="info-row" style="cursor:pointer" onclick="fillComm('1\'','ko','The referee blows the whistle — we are underway!')"><div class="info-dot" style="background:#26c96a"></div><span style="flex:1">🟢 Kick Off</span></div>
+    <div class="info-row" style="cursor:pointer" onclick="fillComm('45\'','ht','Half time whistle. Teams head in for the break.')"><div class="info-dot" style="background:#f5c842"></div><span style="flex:1">🔔 Half Time</span></div>
+    <div class="info-row" style="cursor:pointer" onclick="fillComm('90\'','ft','Full time! The referee blows the final whistle.')"><div class="info-dot" style="background:#3b9eff"></div><span style="flex:1">🏁 Full Time</span></div>
+    <div class="info-row" style="cursor:pointer" onclick="fillComm('','var','VAR is reviewing the incident on the pitch...')"><div class="info-dot" style="background:#a855f7"></div><span style="flex:1">📺 VAR Check</span></div>
+  </div>
+  <div class="sec-head">Live Feed <span id="comm-count" style="font-weight:400;color:var(--muted);font-size:9px"></span></div>
+  <div id="commentary-feed" style="display:flex;flex-direction:column;gap:6px"><div class="card" style="font-size:11px;color:var(--muted)">No updates yet — push your first one above</div></div>
+  <button class="abtn abtn-red" style="margin-top:0" onclick="clearCommentary()">🗑️ Clear All Commentary</button>
+</div>
+
+<!-- ══ POST VIEWS ══ -->
+<div class="tab-pane" id="tab-views">
+  <div class="card al-red"><div style="font-size:12px;font-weight:700;color:var(--ac);margin-bottom:3px">👁 Post View Counters</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Per-post view counts from Firebase <code class="il">/s803views</code></div></div>
+  <div style="display:flex;gap:8px;margin-bottom:4px">
+    <button class="abtn abtn-blue" style="padding:9px" onclick="loadViews()">🔄 Refresh</button>
+    <button class="abtn abtn-red" style="padding:9px" onclick="clearViews()">🗑 Clear All</button>
+  </div>
+  <div class="card" id="views-card"><div class="empty-state"><span class="ei">⏳</span>Loading…</div></div>
+</div>
+
+<!-- ══ SHARES ══ -->
+<div class="tab-pane" id="tab-shares">
+  <div class="card al-green"><div style="font-size:12px;font-weight:700;color:#26c96a;margin-bottom:3px">📢 Post Share Counts</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Share tracking from Firebase <code class="il">/s803shares</code></div></div>
+  <div style="display:flex;gap:8px;margin-bottom:4px">
+    <button class="abtn abtn-blue" style="padding:9px" onclick="loadShares()">🔄 Refresh</button>
+    <button class="abtn abtn-red" style="padding:9px" onclick="clearShares()">🗑 Clear All</button>
+  </div>
+  <div class="card" id="shares-card"><div class="empty-state"><span class="ei">⏳</span>Loading…</div></div>
+</div>
+
+<!-- ══ SECURITY ══ -->
+<div class="tab-pane" id="tab-security">
+  <div class="card al-gold"><div style="font-size:12px;font-weight:700;color:#f5c842;margin-bottom:3px">🔐 PIN &amp; Security</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Manage VIP PIN in Firebase and view lockout events.</div></div>
+  <div class="sec-head">Current VIP PIN</div>
+  <div class="pin-display-box">
+    <div class="pin-display-val" id="pin-display-val">••••</div>
+    <button class="pin-reveal-btn" onclick="togglePinReveal()">👁</button>
+  </div>
+  <div class="sec-head">Change PIN</div>
+  <div class="card">
+    <div class="g2">
+      <div><div class="lbl" style="margin-bottom:4px">New PIN (4 digits)</div><input type="password" class="si mono" id="new-pin-input" maxlength="4" placeholder="••••" inputmode="numeric"/></div>
+      <div><div class="lbl" style="margin-bottom:4px">Confirm PIN</div><input type="password" class="si mono" id="new-pin-confirm" maxlength="4" placeholder="••••" inputmode="numeric"/></div>
+    </div>
+    <button class="abtn abtn-green" style="margin-top:10px;padding:10px" onclick="updatePin()">🔑 Update PIN in Firebase</button>
+    <div id="pin-change-msg" style="font-size:11px;min-height:16px;margin-top:7px"></div>
+  </div>
+  <div class="sec-head">PIN Lockout Events</div>
+  <div id="sec-events"><div class="empty-state"><span class="ei">⏳</span>Loading…</div></div>
+  <button class="abtn abtn-red" style="margin-top:0" onclick="clearSecEvents()">🗑️ Clear Security Log</button>
+</div>
+
+<!-- ══ ERRORS ══ -->
+<div class="tab-pane" id="tab-errors">
+  <div class="card al-red"><div style="font-size:12px;font-weight:700;color:var(--ac);margin-bottom:3px">⚠️ JS Error Logs</div><div style="font-size:11px;color:var(--text2);line-height:1.6">JavaScript errors caught on your live site — from Firebase <code class="il">/s803errors</code></div></div>
+  <div style="display:flex;gap:8px;margin-bottom:4px">
+    <button class="abtn abtn-blue" style="padding:9px" onclick="loadErrors()">🔄 Refresh</button>
+    <button class="abtn abtn-red" style="padding:9px" onclick="clearErrors()">🗑 Clear All</button>
+  </div>
+  <div id="errors-list"><div class="empty-state"><span class="ei">⏳</span>Loading…</div></div>
+</div>
+
+<!-- ══ RAW CONFIG ══ -->
+<div class="tab-pane" id="tab-rawcfg">
+  <div class="card al-blue"><div style="font-size:12px;font-weight:700;color:#3b9eff;margin-bottom:3px">{ } Raw Firebase Config</div><div style="font-size:11px;color:var(--text2);line-height:1.6">Full JSON snapshot of <code class="il">/s803config</code> in Firebase.</div></div>
+  <div style="display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+    <button class="abtn abtn-blue" style="padding:9px;width:auto;flex:1" onclick="loadRawConfig()">🔄 Fetch from Firebase</button>
+    <button class="abtn" style="background:var(--bg2);border:1px solid var(--border)!important;color:var(--muted);padding:9px;width:auto;flex:1;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer" onclick="copyRawJson()">📋 Copy JSON</button>
+    <button class="abtn abtn-green" style="padding:9px;width:auto;flex:1" onclick="pushFB()">⬆ Push Changes</button>
+  </div>
+  <div class="card"><div class="json-box" id="raw-json-box">Click "Fetch from Firebase" to load…</div></div>
+  <div class="sec-head">Import / Overwrite</div>
+  <div class="card">
+    <div class="lbl-sub">Paste JSON to overwrite entire Firebase config</div>
+    <textarea class="si mono" id="import-json" rows="6" placeholder='{"site_name":"Sports 803","accent_color":"default",...}' style="margin-bottom:10px"></textarea>
+    <button class="abtn abtn-red" onclick="importJson()">⚠️ Overwrite Firebase Config with JSON above</button>
+  </div>
+</div>
+
+<!-- ══ MORE ══ -->
+<div class="tab-pane" id="tab-more">
+  <div class="card al-gold"><div style="font-size:13px;font-weight:700;color:#f5c842;margin-bottom:5px">💡 Features — All Built ✅</div><div style="font-size:11px;color:var(--text2);line-height:1.7">Everything requested has been built into this v4 panel.</div></div>
+  <div class="sec-head">All Features</div>
+  <div class="suggest-grid">
+    <div class="suggest-card"><div class="suggest-icon">🔐</div><div class="suggest-title">Login Screen</div><div class="suggest-desc">Firebase PIN verification with rate limiting</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">v4 New</div></div>
+    <div class="suggest-card"><div class="suggest-icon">⚙️</div><div class="suggest-title">Core Settings</div><div class="suggest-desc">PIN, labels, site URL, branding</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">Done</div></div>
+    <div class="suggest-card"><div class="suggest-icon">🎨</div><div class="suggest-title">Theme &amp; Accent</div><div class="suggest-desc">5 colour themes, font, live preview</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">Done</div></div>
+    <div class="suggest-card"><div class="suggest-icon">📣</div><div class="suggest-title">Push Notifications</div><div class="suggest-desc">OneSignal with App ID + REST API Key</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">v4 New</div></div>
+    <div class="suggest-card"><div class="suggest-icon">👁</div><div class="suggest-title">Post Views</div><div class="suggest-desc">Real view counts from Firebase</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">v4 New</div></div>
+    <div class="suggest-card"><div class="suggest-icon">📢</div><div class="suggest-title">Share Counts</div><div class="suggest-desc">Per-platform share tracking</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">v4 New</div></div>
+    <div class="suggest-card"><div class="suggest-icon">🔐</div><div class="suggest-title">Security Dashboard</div><div class="suggest-desc">PIN change + lockout event log</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">v4 New</div></div>
+    <div class="suggest-card"><div class="suggest-icon">⚠️</div><div class="suggest-title">Error Logs</div><div class="suggest-desc">JS errors from live site via Firebase</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">v4 New</div></div>
+    <div class="suggest-card"><div class="suggest-icon">{ }</div><div class="suggest-title">Raw Config</div><div class="suggest-desc">View, copy, overwrite Firebase JSON</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">v4 New</div></div>
+    <div class="suggest-card"><div class="suggest-icon">📅</div><div class="suggest-title">Match Schedule</div><div class="suggest-desc">Fixtures editor with preview</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">Done</div></div>
+    <div class="suggest-card"><div class="suggest-icon">🗳️</div><div class="suggest-title">Live Polls</div><div class="suggest-desc">Match polls with live Firebase results</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">Done</div></div>
+    <div class="suggest-card"><div class="suggest-icon">🎙️</div><div class="suggest-title">Live Commentary</div><div class="suggest-desc">Push text updates with score tracking</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">Done</div></div>
+    <div class="suggest-card"><div class="suggest-icon">🌍</div><div class="suggest-title">Multi-Language</div><div class="suggest-desc">EN, SW, FR, AR, PT, ES</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">Done</div></div>
+    <div class="suggest-card"><div class="suggest-icon">🎥</div><div class="suggest-title">Stream Manager</div><div class="suggest-desc">Up to 8 sources with quality tags</div><div class="suggest-badge" style="background:rgba(38,201,106,.1);color:#26c96a">Done</div></div>
+  </div>
+  <div class="card al-blue" style="margin-top:4px"><div style="font-size:11px;color:var(--text2);line-height:1.6">💡 Tip: <kbd>Ctrl+S</kbd> (or <kbd>Cmd+S</kbd>) anywhere in the panel instantly pushes config to Firebase.</div></div>
+</div>
+
+</div><!-- /content -->
+
+<!-- BOTTOM BAR -->
+<div id="bbar">
+  <div id="bb-icon">S<br/>803</div>
+  <div style="flex:1;min-width:0"><div id="bb-nm">Sports 803</div><div id="bb-url">sports803livestream.blogspot.com</div></div>
+  <button id="reset-btn" onclick="doReset()">↩ Reset</button>
+  <button id="bb-push" onclick="pushFB()">🚀 Push Live</button>
+</div>
+
+</div><!-- /app -->
+
+<script>
+'use strict';
+/* ═══════════════════════════════════════════════════════════
+   SPORTS 803 CONTROL PANEL v4 — FULL JAVASCRIPT
+════════════════════════════════════════════════════════════ */
+
+var FB_URL = 'https://sports-803-1b806-default-rtdb.firebaseio.com';
+
+var DEF = {
+  VIP_PIN:'8033',VIP_LABEL:'app-vip',LIVE_LABEL:'Live Stream',
+  SITE_URL:'https://sports803livestream.blogspot.com',APP_LINK:'',GA_ID:'G-Y5EVJ9NQ5B',
+  accent_color:'default',app_name:'Sports 803',app_tagline:'Free Live Sports',
+  watch_live_label:'Watch Live',onesignal_id:'',
+  social_twitter:'',social_facebook:'',social_youtube:'',social_whatsapp:'',
+  font_head:'Oswald',TICKER_LEAGUES:['eng.1','esp.1','uefa.champions','ita.1','ger.1','fra.1','usa.1'],
+  splash_enabled:true,splash_logo:'SPORTS 803',splash_name:'Sports 803',splash_tagline:'Free Live Sports',splash_duration:1900,
+  nav_items:[
+    {icon:'🏠',label:'Home',href:'https://sports803livestream.blogspot.com/',id:'home'},
+    {icon:'📺',label:'Live',href:'https://sports803livestream.blogspot.com/search/label/Live%20Stream',id:'live'},
+    {icon:'⚽',label:'Scores',href:'#scores',id:'scores'},
+    {icon:'🔖',label:'Saved',href:'#saved',id:'saved'},
+    {icon:'🔔',label:'Alerts',href:'#alerts',id:'alerts'}
+  ],
+  top_link_label:'',top_link_url:'',footer_text:'© 2025 Sports 803 · Free Live Sports',footer_links:'',
+  adsense_id:'ca-pub-5622139873916803',adsense_auto:false,
+  ad_top:false,ad_infeed:false,ad_article:false,ad_sticky:false,
+  ad_slot_top:'',ad_slot_infeed:'',ad_slot_article:'',ad_slot_sticky:'',ad_custom:'',ad_free_vip:false,
+  ann_enabled:false,ann_text:'',ann_link:'',ann_color:'#e03030',
+  breaking_enabled:false,breaking_text:'',featured_enabled:false,featured_title:'',featured_url:'',
+  motd_enabled:false,motd_home:'',motd_away:'',motd_time:'',motd_url:'',custom_css:'',
+  notif_prompt:true,notif_bar:true,
+  seo_description:'',seo_keywords:'',og_title:'',og_description:'',og_image:'',
+  pwa_short_name:'Sports803',pwa_theme_color:'#080808',allow_indexing:true,
+  schedule_enabled:false,schedule_title:"This Week's Fixtures",schedule_default_comp:'Premier League',fixtures:[],
+  analytics_enabled:true,
+  poll_enabled:false,poll_question:'',poll_a:'',poll_b:'',poll_c:'',poll_d:'',poll_end:'',
+  streams_enabled:false,stream_headline:'',stream_sources:[],stream_backup:'',streams_vip_only:false,
+  lang_enabled:false,lang_default:'en',lang_active:['en'],lang_sw_custom:'',lang_fr_custom:'',
+  commentary_enabled:false,commentary_match:'',commentary_status:'pre',
+  commentary_home_score:0,commentary_away_score:0
+};
+
+var ACCENTS = {default:'#e03030',blue:'#3b9eff',green:'#26c96a',gold:'#f5c842',purple:'#a855f7'};
+var LEAGUES = [
+  {id:'eng.1',label:'🏴󠁧󠁢󠁥󠁮󠁧󠁿 EPL'},{id:'esp.1',label:'🇪🇸 La Liga'},{id:'uefa.champions',label:'🌟 UCL'},
+  {id:'ita.1',label:'🇮🇹 Serie A'},{id:'ger.1',label:'🇩🇪 Bundesliga'},{id:'fra.1',label:'🇫🇷 Ligue 1'},
+  {id:'usa.1',label:'🇺🇸 MLS'},{id:'eng.2',label:'🏴󠁧󠁢󠁥󠁮󠁧󠁿 Championship'},
+  {id:'uefa.europa',label:'🟠 Europa'},{id:'conmebol.libertadores',label:'🌎 Libertadores'}
+];
+var STR_KEYS=['VIP_PIN','VIP_LABEL','LIVE_LABEL','SITE_URL','APP_LINK','GA_ID',
+  'app_name','app_tagline','watch_live_label','onesignal_id',
+  'social_twitter','social_facebook','social_youtube','social_whatsapp','font_head',
+  'splash_logo','splash_name','splash_tagline','splash_duration',
+  'top_link_label','top_link_url','footer_text','footer_links',
+  'adsense_id','ad_slot_top','ad_slot_infeed','ad_slot_article','ad_slot_sticky','ad_custom',
+  'ann_text','ann_link','breaking_text','featured_title','featured_url',
+  'motd_home','motd_away','motd_time','motd_url','custom_css',
+  'seo_description','seo_keywords','og_title','og_description','og_image','pwa_short_name','pwa_theme_color',
+  'schedule_title','schedule_default_comp',
+  'poll_question','poll_a','poll_b','poll_c','poll_d','poll_end',
+  'stream_headline','stream_backup','lang_default','lang_sw_custom','lang_fr_custom',
+  'commentary_match','commentary_status'];
+var BOOL_KEYS=['adsense_auto','ad_top','ad_infeed','ad_article','ad_sticky','ad_free_vip',
+  'ann_enabled','breaking_enabled','featured_enabled','motd_enabled','notif_prompt','notif_bar',
+  'splash_enabled','allow_indexing','schedule_enabled','analytics_enabled','poll_enabled',
+  'streams_enabled','streams_vip_only','lang_enabled','commentary_enabled'];
+
+function objAssign(t,s){var o={},k;for(k in t)if(Object.prototype.hasOwnProperty.call(t,k))o[k]=t[k];for(k in s)if(Object.prototype.hasOwnProperty.call(s,k))o[k]=s[k];return o;}
+function lsGet(k,d){try{var v=localStorage.getItem(k);return v!==null?JSON.parse(v):JSON.parse(JSON.stringify(d));}catch(e){return typeof d!=='undefined'?JSON.parse(JSON.stringify(d)):null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function lsGetStr(k,d){return localStorage.getItem(k)||d||'';}
+function lsSetStr(k,v){localStorage.setItem(k,v);}
+
+var cfg = objAssign(DEF, lsGet('s803_v3_config', DEF));
+var fbUrl = lsGetStr('s803_fb_url', FB_URL);
+var fbTok = lsGetStr('s803_fb_tok', '');
+
+function $id(i){return document.getElementById(i);}
+
+var ttT;
+function toast(msg,c){
+  c=c||'#e03030';
+  var t=$id('toast');
+  t.textContent=msg;
+  t.style.cssText='border:1px solid '+c+'44;border-left:3px solid '+c;
+  t.classList.add('on');
+  clearTimeout(ttT);
+  ttT=setTimeout(function(){t.classList.remove('on');},3400);
+}
+
+function setAc(c){
+  document.documentElement.style.setProperty('--ac',c);
+  document.documentElement.style.setProperty('--ac2',c+'1a');
+  document.documentElement.style.setProperty('--acglow',c+'55');
+}
+
+function setFbStatus(state,text){
+  var d=$id('fb-dot'),t=$id('fb-status-txt');
+  if(d){d.className='fb-dot '+(state==='ok'?'ok':state==='err'?'err':'loading');}
+  if(t)t.textContent=text;
+}
+
+/* ────────────────────────
+   LOGIN
+──────────────────────── */
+var loginEntry='', loginActualPin='', loginAttempts=0, loginLock=0;
+
+document.querySelectorAll('#login-screen .pin-key').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var d=btn.dataset.d;
+    if(d==='del'){loginEntry=loginEntry.slice(0,-1);updLoginDots();return;}
+    if(d==='clr'){loginEntry='';updLoginDots();return;}
+    if(loginEntry.length>=4)return;
+    loginEntry+=d;
+    updLoginDots();
+    if(loginEntry.length===4)setTimeout(checkLoginPin,120);
+  });
+});
+
+function updLoginDots(){
+  var dots=document.querySelectorAll('#login-pin-dots .pin-dot-l');
+  dots.forEach(function(d,i){
+    d.classList.toggle('filled',i<loginEntry.length);
+    d.classList.remove('error');
+  });
+  $id('login-err').textContent='';
+}
+
+function checkLoginPin(){
+  if(Date.now()<loginLock){
+    $id('login-err').textContent='Too many attempts. Wait '+Math.ceil((loginLock-Date.now())/1000)+'s.';
+    loginEntry='';updLoginDots();return;
+  }
+  fbUrl=($id('login-fb-url').value||'').trim().replace(/\/$/,'');
+  lsSetStr('s803_fb_url',fbUrl);
+  setFbStatus('loading','Verifying…');
+
+  xhrReq('GET',fbUrl+'/s803config/VIP_PIN.json',null,
+    function(text){
+      try{
+        var pin=JSON.parse(text);
+        if(pin===null||pin===undefined){doLoginSuccess(true);return;}
+        loginActualPin=String(pin);
+        lsSetStr('s803_panel_pin_cache',loginActualPin);
+        if(String(loginEntry)===loginActualPin){
+          loginAttempts=0;doLoginSuccess(false);
+        } else {
+          loginAttempts++;
+          if(loginAttempts>=5){loginLock=Date.now()+30000;loginAttempts=0;}
+          document.querySelectorAll('#login-pin-dots .pin-dot-l').forEach(function(d){d.classList.add('error');});
+          setTimeout(function(){document.querySelectorAll('#login-pin-dots .pin-dot-l').forEach(function(d){d.classList.remove('error');});},400);
+          $id('login-err').textContent=loginAttempts>=4?'1 attempt left!':'Incorrect PIN';
+          loginEntry='';updLoginDots();
+          setFbStatus('err','Wrong PIN');
+        }
+      }catch(e){doLoginSuccess(true);}
+    },
+    function(){
+      var cached=lsGetStr('s803_panel_pin_cache','');
+      if(cached&&String(loginEntry)===cached){doLoginSuccess(true);}
+      else{doLoginSuccess(true);}
+    }
+  );
+}
+
+function loginSkip(){
+  fbUrl=($id('login-fb-url').value||'').trim().replace(/\/$/,'');
+  lsSetStr('s803_fb_url',fbUrl);
+  doLoginSuccess(true);
+}
+
+function doLoginSuccess(offline){
+  $id('login-screen').classList.add('hidden');
+  $id('app').style.display='block';
+  setFbStatus(offline?'err':'ok',offline?'Offline mode':'Connected');
+  initApp();
+}
+
+function lockPanel(){
+  $id('login-screen').classList.remove('hidden');
+  $id('app').style.display='none';
+  loginEntry='';updLoginDots();
+}
+
+/* ────────────────────────
+   TABS
+──────────────────────── */
+function sw(name,btn){
+  document.querySelectorAll('.tab-pane').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  var panel=$id('tab-'+name);
+  if(panel)panel.classList.add('active');
+  if(btn)btn.classList.add('active');
+  onTabOpen(name);
+}
+
+function onTabOpen(t){
+  if(t==='integrate'){updSnippets();updSnapshot();}
+  if(t==='schedule')buildFixturesEditor();
+  if(t==='analytics')loadAnalytics();
+  if(t==='polls'){updPollPreview();loadPollResults();}
+  if(t==='streams')buildStreamsEditor();
+  if(t==='language')updLangPreview();
+  if(t==='commentary'){initCommScores();loadCommFeed();}
+  if(t==='views')loadViews();
+  if(t==='shares')loadShares();
+  if(t==='security')loadSecurity();
+  if(t==='errors')loadErrors();
+  if(t==='rawcfg')loadRawConfig();
+}
+
+/* ────────────────────────
+   APP INIT
+──────────────────────── */
+function initApp(){
+  setAc(ACCENTS[cfg.accent_color]||'#e03030');
+  fillAll();buildLeagues();buildSwatches();buildNavEditor();buildAnnColors();
+  updPreview();updSplash();updAnn();updSnippets();updSnapshot();updBottomBar();
+  var fu=$id('fb-url'),ft=$id('fb-token');
+  if(fu)fu.value=fbUrl;
+  if(ft)ft.value=fbTok;
+  updHdrSub();
+  /* Restore OneSignal fields */
+  var aid=$id('cfg-onesignal_id2');
+  if(aid)aid.value=cfg.onesignal_id||'';
+  var rk=$id('os-rest-key');
+  if(rk)rk.value=lsGetStr('s803_os_rest_key','');
+}
+
+function fillAll(){
+  STR_KEYS.forEach(function(k){var el=$id('cfg-'+k);if(el)el.value=(cfg[k]!==undefined&&cfg[k]!==null)?cfg[k]:'';});
+  BOOL_KEYS.forEach(function(k){var btn=$id('tog-'+k);if(btn)btn.classList.toggle('on',!!cfg[k]);});
+  updAnnColorSwatches();
+}
+
+function ch(){
+  STR_KEYS.forEach(function(k){var el=$id('cfg-'+k);if(el)cfg[k]=el.value;});
+  lsSet('s803_v3_config',cfg);
+  updPreview();updBottomBar();updSnippets();updSnapshot();
+}
+
+function fbCh(){
+  fbUrl=($id('fb-url')?$id('fb-url').value:'').trim().replace(/\/$/,'');
+  fbTok=($id('fb-token')?$id('fb-token').value.trim():'');
+  lsSetStr('s803_fb_url',fbUrl);
+  lsSetStr('s803_fb_tok',fbTok);
+  updHdrSub();
+}
+
+function togCfg(key,btn){cfg[key]=!cfg[key];btn.classList.toggle('on',!!cfg[key]);lsSet('s803_v3_config',cfg);}
+function syncOneSignal(){cfg.onesignal_id=($id('cfg-onesignal_id2')||{}).value||'';var si=$id('cfg-onesignal_id');if(si)si.value=cfg.onesignal_id;lsSet('s803_v3_config',cfg);}
+function saveRestKey(){lsSetStr('s803_os_rest_key',($id('os-rest-key')||{}).value||'');}
+function toggleRestKeyVis(){var el=$id('os-rest-key');if(el)el.type=el.type==='password'?'text':'password';}
+
+function updHdrSub(){
+  var s=$id('hdr-sub');if(!s)return;
+  if(fbUrl&&fbUrl.indexOf('firebaseio.com')!==-1){
+    var proj=fbUrl.replace('https://','').split('.')[0];
+    s.innerHTML='<span class="status-dot" style="background:#26c96a"></span><span style="color:#26c96a">Firebase: '+proj+'</span>';
+  } else {
+    s.innerHTML='<span class="status-dot" style="background:#555"></span><span style="color:var(--muted)">Enter Firebase URL in 🔥 tab</span>';
+  }
+}
+
+/* ────────────────────────
+   BUILDERS
+──────────────────────── */
+function buildLeagues(){
+  var g=$id('league-grid');if(!g)return;g.innerHTML='';
+  LEAGUES.forEach(function(lg){
+    var btn=document.createElement('button');
+    var on=(cfg.TICKER_LEAGUES||[]).indexOf(lg.id)!==-1;
+    btn.className='league-btn'+(on?' on':'');
+    btn.textContent=lg.label;
+    btn.onclick=function(){var arr=cfg.TICKER_LEAGUES||[];var idx=arr.indexOf(lg.id);if(idx!==-1)arr.splice(idx,1);else arr.push(lg.id);cfg.TICKER_LEAGUES=arr;lsSet('s803_v3_config',cfg);btn.classList.toggle('on',arr.indexOf(lg.id)!==-1);};
+    g.appendChild(btn);
+  });
+}
+
+function buildSwatches(){
+  var row=$id('sw-row');if(!row)return;row.innerHTML='';
+  Object.keys(ACCENTS).forEach(function(key){
+    var color=ACCENTS[key],on=cfg.accent_color===key;
+    var wrap=document.createElement('div');wrap.className='sw-wrap';
+    wrap.innerHTML='<div class="sw'+(on?' on':'')+'" style="background:'+color+'">'+(on?'✓':'')+'</div><div class="sw-lbl" style="color:'+(on?color:'#333')+'">'+key+'</div>';
+    wrap.onclick=function(){cfg.accent_color=key;lsSet('s803_v3_config',cfg);setAc(color);buildSwatches();updPreview();updBottomBar();updSplash();};
+    row.appendChild(wrap);
+  });
+}
+
+function buildNavEditor(){
+  var ed=$id('nav-editor');if(!ed)return;ed.innerHTML='';
+  (cfg.nav_items||[]).forEach(function(item,i){
+    var row=document.createElement('div');row.className='nav-item-row';
+    row.innerHTML='<span class="nav-drag">⠿</span>'
+      +'<input class="si nav-icon-inp" value="'+esc(item.icon||'')+'" placeholder="🏠" oninput="updNav('+i+',\'icon\',this.value)">'
+      +'<input class="si nav-label-inp" value="'+esc(item.label||'')+'" placeholder="Label" oninput="updNav('+i+',\'label\',this.value)">'
+      +'<input class="si nav-href-inp" value="'+esc(item.href||'')+'" placeholder="https://…" oninput="updNav('+i+',\'href\',this.value)">'
+      +'<button class="nav-del" onclick="delNav('+i+')">✕</button>';
+    ed.appendChild(row);
+  });
+}
+function updNav(i,key,val){if(cfg.nav_items&&cfg.nav_items[i]){cfg.nav_items[i][key]=val;lsSet('s803_v3_config',cfg);}}
+function delNav(i){cfg.nav_items.splice(i,1);lsSet('s803_v3_config',cfg);buildNavEditor();}
+function addNavItem(){cfg.nav_items=cfg.nav_items||[];cfg.nav_items.push({icon:'⭐',label:'New',href:'#',id:'new'+Date.now()});lsSet('s803_v3_config',cfg);buildNavEditor();}
+
+function buildAnnColors(){
+  document.querySelectorAll('.ann-csw').forEach(function(sw){
+    sw.onclick=function(){cfg.ann_color=sw.dataset.c;lsSet('s803_v3_config',cfg);updAnn();updAnnColorSwatches();};
+  });
+  updAnnColorSwatches();
+}
+function updAnnColorSwatches(){document.querySelectorAll('.ann-csw').forEach(function(sw){sw.style.border=sw.dataset.c===(cfg.ann_color||'#e03030')?'2px solid white':'2px solid transparent';});}
+function updAnn(){
+  var pv=$id('ann-prev'),txt=$id('ann-prev-text'),c=cfg.ann_color||'#e03030';
+  if(pv){pv.style.background=c+'18';pv.style.border='1px solid '+c+'35';}
+  if(txt)txt.textContent=cfg.ann_text||'Your announcement text here…';
+}
+
+function updSplash(){
+  var logo=$id('spl-logo'),nm=$id('spl-name'),tg=$id('spl-tag');
+  var elL=$id('cfg-splash_logo'),elN=$id('cfg-splash_name'),elT=$id('cfg-splash_tagline');
+  if(logo&&elL)logo.innerHTML=(elL.value||'SPORTS 803').replace(' ','<br/>');
+  if(nm&&elN){var n=elN.value||'Sports 803';var parts=n.split(' ');nm.innerHTML=parts.length>1?parts.slice(0,-1).join(' ')+' <span style="color:var(--ac)">'+parts.slice(-1)+'</span>':'<span style="color:var(--ac)">'+n+'</span>';}
+  if(tg&&elT)tg.textContent=elT.value||'Free Live Sports';
+}
+
+function updPreview(){
+  var n=$id('pv-name');if(n)n.textContent=cfg.app_name||'Sports 803';
+  var t=$id('pv-tag');if(t)t.textContent=cfg.app_tagline||'Free Live Sports';
+  var w=$id('pv-watch');if(w)w.textContent='📺 '+(cfg.watch_live_label||'Watch Live')+' on '+(cfg.app_name||'Sports 803');
+  var ic=$id('pv-icon');if(ic){var wds=(cfg.app_name||'S').split(' ');ic.textContent=wds.map(function(wd){return wd[0]||'';}).join('');}
+}
+
+function updBottomBar(){
+  var ac=ACCENTS[cfg.accent_color]||'#e03030';
+  [$id('bb-icon'),$id('app-icon')].forEach(function(el){if(el)el.style.background=ac;});
+  [$id('push-btn'),$id('bb-push')].forEach(function(el){if(el)el.style.background=ac;});
+  var nm=$id('bb-nm');if(nm)nm.textContent=cfg.app_name||'Sports 803';
+  var ur=$id('bb-url');if(ur)ur.textContent=(cfg.SITE_URL||'').replace('https://','');
+}
+
+/* ────────────────────────
+   SNIPPETS
+──────────────────────── */
+function updSnippets(){
+  var url=(fbUrl||FB_URL).replace(/\/$/,'');
+  var loader=['<script>//<![CDATA[','window.S803_CFG={};','(function(){','  try{','    var x=new XMLHttpRequest();',"    x.open('GET','"+url+"/s803config.json',false);",'    x.send(null);','    if(x.status===200){',"      var d=JSON.parse(x.responseText);",'      if(d&&typeof d===\'object\')window.S803_CFG=d;','    }','  }catch(e){window.S803_CFG={};}','})();','//]]><\\/script>'].join('\n');
+  var settings=["/* ════ SETTINGS — reads from Firebase Control Panel ════ */",'var _c=window.S803_CFG||{};',"var VIP_PIN=_c.VIP_PIN||'"+(cfg.VIP_PIN||'8033')+"';",'var VIP_LABEL=_c.VIP_LABEL||\''+(cfg.VIP_LABEL||'app-vip')+"';","var LIVE_LABEL=_c.LIVE_LABEL||'"+(cfg.LIVE_LABEL||'Live Stream')+"';",'var SITE_URL=_c.SITE_URL||\''+(cfg.SITE_URL||'https://sports803livestream.blogspot.com')+"';","var APP_LINK=_c.APP_LINK||'"+(cfg.APP_LINK||'')+"';",'var GA_ID=_c.GA_ID||\''+(cfg.GA_ID||'G-Y5EVJ9NQ5B')+"';"].join('\n');
+  mkCode('snip-loader',loader);mkCode('snip-settings',settings);
+}
+
+function mkCode(id,code){
+  var w=$id(id);if(!w)return;
+  var bid=id+'-btn';
+  w.innerHTML='<div class="code-block"><div class="code-hdr"><div class="code-dots"><div class="code-dot" style="background:#ff5f57"></div><div class="code-dot" style="background:#febc2e"></div><div class="code-dot" style="background:#28c840"></div></div><button class="copy-btn" id="'+bid+'" onclick="cpCode(\''+bid+'\')">Copy</button></div><pre class="code-body">'+esc(code)+'</pre></div>';
+  var btn=$id(bid);if(btn)btn.dataset.code=code;
+}
+
+function cpCode(bid){
+  var btn=$id(bid);if(!btn)return;
+  var code=btn.dataset.code||'';
+  var done=function(){btn.textContent='✅ Done';btn.classList.add('ok');setTimeout(function(){btn.textContent='Copy';btn.classList.remove('ok');},2200);};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(code).then(done).catch(done);
+  else{var ta=document.createElement('textarea');ta.value=code;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);done();}
+}
+
+function updSnapshot(){
+  var snap=$id('cfg-snapshot');if(!snap)return;
+  var rows=[
+    ['VIP_PIN',cfg.VIP_PIN?cfg.VIP_PIN.replace(/./g,'●'):'—','Exclusive PIN'],
+    ['SITE_URL',(cfg.SITE_URL||'').replace('https://',''),'Blog URL'],
+    ['App Name',cfg.app_name||'—','Branding'],
+    ['GA4 ID',cfg.GA_ID||'—','Analytics'],
+    ['Accent',cfg.accent_color||'default','Theme colour'],
+    ['AdSense',cfg.adsense_id||'not set','Publisher ID'],
+    ['Ticker',(cfg.TICKER_LEAGUES||[]).length+' leagues','Live ticker'],
+    ['Announce',cfg.ann_enabled?'ON':'OFF','Bar'],
+    ['Firebase',fbUrl?fbUrl.replace('https://','').split('.')[0]:'—','Database']
+  ];
+  snap.innerHTML=rows.map(function(r){return '<div class="snap-row"><code class="snap-key">'+r[0]+'</code><span class="snap-val">'+(r[1]||'—')+'</span><span class="snap-desc">'+r[2]+'</span></div>';}).join('');
+}
+
+/* ────────────────────────
+   XHR / FIREBASE
+──────────────────────── */
+function xhrReq(method,url,body,onOk,onErr){
+  var x=new XMLHttpRequest();
+  x.open(method,url,true);
+  if(body)x.setRequestHeader('Content-Type','application/json');
+  x.onreadystatechange=function(){if(x.readyState!==4)return;if(x.status>=200&&x.status<300)onOk(x.responseText,x.status);else onErr(x.status,x.responseText);};
+  x.onerror=function(){onErr(0,'Network error');};
+  x.send(body?JSON.stringify(body):null);
+}
+
+function fbEndpoint(){return(fbUrl||FB_URL).replace(/\/$/,'')+'/s803config.json'+(fbTok?'?auth='+fbTok:'');}
+function fbPath(path){return(fbUrl||FB_URL).replace(/\/$/,'')+path+'.json'+(fbTok?'?auth='+fbTok:'');}
+
+function testConn(){
+  fbCh();if(!fbUrl){toast('Enter Firebase URL first','#f5c842');return;}
+  toast('🔌 Testing…','#3b9eff');setFbStatus('loading','Testing…');
+  xhrReq('GET',fbEndpoint(),null,function(){toast('✅ Connected! Firebase is working.','#26c96a');setFbStatus('ok','Connected');updHdrSub();},function(status){
+    setFbStatus('err','Error '+status);
+    if(status===401||status===403)toast('❌ Unauthorised — set .read: true and .write: true in Firebase Rules','#e03030');
+    else if(status===0)toast('❌ Cannot reach Firebase — check your URL','#e03030');
+    else toast('❌ Error '+status,'#e03030');
+  });
+}
+
+function pullFB(){
+  fbCh();if(!fbUrl){toast('Enter Firebase URL first','#f5c842');return;}
+  toast('📥 Loading from Firebase…','#3b9eff');
+  xhrReq('GET',fbEndpoint(),null,function(text){
+    try{
+      var data=JSON.parse(text);
+      if(data&&typeof data==='object'&&!data.error){
+        cfg=objAssign(DEF,data);lsSet('s803_v3_config',cfg);
+        fillAll();buildLeagues();buildSwatches();buildNavEditor();buildAnnColors();
+        updPreview();updSplash();updAnn();updBottomBar();updSnippets();updSnapshot();
+        setAc(ACCENTS[cfg.accent_color]||'#e03030');
+        loginActualPin=cfg.VIP_PIN||'';
+        toast('📥 Config loaded from Firebase!','#3b9eff');setFbStatus('ok','Connected');
+      }else{toast('No config saved yet — Push Live first','#f5c842');}
+    }catch(e){toast('❌ Could not parse Firebase response','#e03030');}
+  },function(status){toast('❌ Firebase error '+status,'#e03030');setFbStatus('err','Error '+status);});
+}
+
+function pushFB(){
+  fbCh();
+  if(!fbUrl){toast('⚠️ Set your Firebase URL in the 🔥 Firebase tab first','#f5c842');return;}
+  var pb=$id('push-btn'),bp=$id('bb-push');
+  if(pb){pb.disabled=true;pb.textContent='⏳ Pushing…';}
+  toast('🚀 Pushing to Firebase…',ACCENTS[cfg.accent_color]||'#e03030');
+  setFbStatus('loading','Saving…');
+  xhrReq('PUT',fbEndpoint(),cfg,function(){
+    toast('🚀 LIVE! Your website is updated!','#26c96a');setFbStatus('ok','Saved ✓');
+    if(pb){pb.textContent='✅ Live!';pb.classList.add('ok');pb.style.background='#26c96a';pb.disabled=false;}
+    if(bp){bp.textContent='✅ Live!';bp.classList.add('ok');bp.style.background='#26c96a';}
+    setTimeout(function(){var ac=ACCENTS[cfg.accent_color]||'#e03030';if(pb){pb.textContent='🚀 Push Live';pb.classList.remove('ok');pb.style.background=ac;}if(bp){bp.textContent='🚀 Push Live';bp.classList.remove('ok');bp.style.background=ac;}},3200);
+  },function(status){
+    if(pb){pb.textContent='🚀 Push Live';pb.disabled=false;}setFbStatus('err','Save failed');
+    if(status===401||status===403)toast('❌ Permission denied — Firebase Rules: set .write: true → Publish','#e03030');
+    else if(status===0)toast('❌ Cannot reach Firebase — check your URL','#e03030');
+    else toast('❌ Firebase error '+status,'#e03030');
+  });
+}
+
+/* ────────────────────────
+   NOTIFICATIONS
+──────────────────────── */
+function fillNotif(title,body,url){
+  var t=$id('notif-title'),b=$id('notif-body'),u=$id('notif-url');
+  if(t)t.value=title;if(b)b.value=body;if(u)u.value=url||cfg.SITE_URL||'';
+}
+
+function sendNotif(){
+  var appId=cfg.onesignal_id||($id('cfg-onesignal_id2')?$id('cfg-onesignal_id2').value:'');
+  var restKey=lsGetStr('s803_os_rest_key','');
+  if(!appId){toast('⚠️ Add your OneSignal App ID in the Alerts tab first','#f5c842');return;}
+  if(!restKey){toast('⚠️ Add your OneSignal REST API Key in the Alerts tab first','#f5c842');return;}
+  var title=($id('notif-title').value||'').trim();
+  var body=($id('notif-body').value||'').trim();
+  var url=($id('notif-url').value||cfg.SITE_URL||'').trim();
+  if(!title||!body){toast('⚠️ Fill in title and message first','#f5c842');return;}
+  toast('📣 Sending notification…','#a855f7');
+  var payload={app_id:appId,included_segments:['All'],headings:{en:title},contents:{en:body},url:url};
+  var x=new XMLHttpRequest();
+  x.open('POST','https://onesignal.com/api/v1/notifications',true);
+  x.setRequestHeader('Content-Type','application/json');
+  x.setRequestHeader('Authorization','Basic '+restKey);
+  x.onreadystatechange=function(){
+    if(x.readyState!==4)return;
+    if(x.status>=200&&x.status<300)toast('📣 Notification sent to all subscribers!','#26c96a');
+    else{try{var r=JSON.parse(x.responseText);toast('❌ OneSignal error: '+(r.errors&&r.errors[0]||x.status),'#e03030');}catch(e){toast('❌ OneSignal error '+x.status,'#e03030');}}
+  };
+  x.onerror=function(){toast('❌ OneSignal network error','#e03030');};
+  x.send(JSON.stringify(payload));
+}
+
+/* ────────────────────────
+   RESET / EXPORT
+──────────────────────── */
+function doReset(){
+  if(!confirm('Reset all settings to defaults?'))return;
+  cfg=JSON.parse(JSON.stringify(DEF));lsSet('s803_v3_config',cfg);
+  fillAll();buildLeagues();buildSwatches();buildNavEditor();buildAnnColors();
+  updPreview();updSplash();updAnn();updBottomBar();updSnippets();updSnapshot();setAc('#e03030');
+  toast('↩ Reset to defaults','#787470');
+}
+function exportJSON(){
+  var json=JSON.stringify(cfg,null,2);
+  var blob=new Blob([json],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='sports803-config.json';a.click();
+  toast('📤 Config exported as JSON','#3b9eff');
+}
+
+/* ────────────────────────
+   SCHEDULE
+──────────────────────── */
+function buildFixturesEditor(){
+  var ed=$id('fixtures-editor');if(!ed)return;
+  var arr=cfg.fixtures||[];
+  if(!arr.length){ed.innerHTML='<div style="font-size:11px;color:var(--muted);text-align:center;padding:14px">No fixtures yet</div>';updSchedPreview();return;}
+  ed.innerHTML=arr.map(function(f,i){
+    return '<div class="nav-item-row" style="flex-wrap:wrap;gap:6px">'
+      +'<span class="nav-drag">⠿</span>'
+      +'<input class="si" style="width:90px;flex:1" placeholder="Home" value="'+esc(f.home||'')+'" oninput="updFix('+i+',\'home\',this.value)">'
+      +'<input class="si" style="width:90px;flex:1" placeholder="Away" value="'+esc(f.away||'')+'" oninput="updFix('+i+',\'away\',this.value)">'
+      +'<input class="si" style="width:88px" placeholder="Competition" value="'+esc(f.comp||'')+'" oninput="updFix('+i+',\'comp\',this.value)">'
+      +'<input class="si" style="width:88px" type="date" value="'+esc(f.date||'')+'" oninput="updFix('+i+',\'date\',this.value)">'
+      +'<input class="si" style="width:72px" type="time" value="'+esc(f.time||'')+'" oninput="updFix('+i+',\'time\',this.value)">'
+      +'<input class="si" style="flex:2;min-width:120px" placeholder="Watch URL" value="'+esc(f.url||'')+'" oninput="updFix('+i+',\'url\',this.value)">'
+      +'<button class="nav-del" onclick="delFix('+i+')">✕</button></div>';
+  }).join('');
+  updSchedPreview();
+}
+function updFix(i,k,v){if(cfg.fixtures&&cfg.fixtures[i]){cfg.fixtures[i][k]=v;lsSet('s803_v3_config',cfg);updSchedPreview();}}
+function delFix(i){cfg.fixtures.splice(i,1);lsSet('s803_v3_config',cfg);buildFixturesEditor();}
+function addFixture(){cfg.fixtures=cfg.fixtures||[];if(cfg.fixtures.length>=20){toast('Maximum 20 fixtures','#f5c842');return;}cfg.fixtures.push({home:'',away:'',comp:cfg.schedule_default_comp||'',date:'',time:'',url:''});lsSet('s803_v3_config',cfg);buildFixturesEditor();}
+function updSchedPreview(){
+  var pv=$id('sched-preview');if(!pv)return;
+  var arr=cfg.fixtures||[];
+  if(!arr.length){pv.innerHTML='<div style="font-size:11px;color:var(--muted)">Add fixtures to see the preview</div>';return;}
+  pv.innerHTML='<div style="font-size:10px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">'+(cfg.schedule_title||"This Week's Fixtures")+'</div>'
+    +arr.map(function(f){
+      var ds='';if(f.date){try{ds=new Date(f.date+'T00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}catch(e){ds=f.date;}}
+      return '<div style="padding:8px 0;border-bottom:1px solid #151515;display:flex;align-items:center;gap:8px">'
+        +'<div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--text)">'+(f.home||'Home')+' <span style="color:var(--muted)">vs</span> '+(f.away||'Away')+'</div>'
+        +'<div style="font-size:10px;color:var(--muted);margin-top:2px">'+(f.comp||'')+(ds?' · '+ds:'')+(f.time?' · '+f.time:'')+'</div></div>'
+        +(f.url?'<a href="'+f.url+'" style="font-size:9px;font-weight:800;color:var(--ac);text-decoration:none;background:var(--ac2);padding:3px 8px;border-radius:4px">Watch</a>':'')
+        +'</div>';
+    }).join('');
+}
+
+/* ────────────────────────
+   ANALYTICS
+──────────────────────── */
+function loadAnalytics(){
+  toast('🔄 Loading analytics…','#3b9eff');
+  xhrReq('GET',fbPath('/s803analytics'),null,function(text){
+    try{
+      var d=JSON.parse(text);
+      if(!d||d.error){toast('No analytics data yet','#f5c842');return;}
+      var s=$id('an-sessions'),pv=$id('an-pageviews'),inst=$id('an-installs'),vip=$id('an-vip');
+      if(s)s.textContent=(d.total_sessions||0).toLocaleString();
+      if(pv)pv.textContent=(d.total_pageviews||0).toLocaleString();
+      if(inst)inst.textContent=(d.total_installs||0).toLocaleString();
+      if(vip)vip.textContent=(d.total_vip_unlocks||0).toLocaleString();
+      var dv=$id('an-devices');
+      if(dv&&d.devices){var tot=Object.values(d.devices).reduce(function(a,b){return a+b;},0)||1;dv.innerHTML=Object.keys(d.devices).map(function(dk){var pct=Math.round(d.devices[dk]/tot*100);var ic=dk==='android'?'🤖':dk==='ios'?'🍎':'🖥️';return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span>'+ic+' '+dk.charAt(0).toUpperCase()+dk.slice(1)+'</span><span style="font-weight:700">'+pct+'%</span></div><div style="background:#1a1a1a;border-radius:4px;height:6px"><div style="background:var(--ac);border-radius:4px;height:6px;width:'+pct+'%"></div></div></div>';}).join('');}
+      var tp=$id('an-posts');
+      if(tp&&d.top_posts){var posts=Object.keys(d.top_posts).sort(function(a,b){return d.top_posts[b]-d.top_posts[a];}).slice(0,5);tp.innerHTML=posts.map(function(url,i){var parts=url.split('/');var slug=parts[parts.length-1]||url;return '<div class="snap-row"><code class="snap-key" style="min-width:20px">#'+(i+1)+'</code><span class="snap-val" style="font-size:10px">'+slug+'</span><span class="snap-desc">'+d.top_posts[url]+' views</span></div>';}).join('');}
+      toast('✅ Analytics loaded!','#26c96a');
+    }catch(e){toast('❌ Could not parse analytics','#e03030');}
+  },function(st){toast('❌ Firebase error '+st,'#e03030');});
+}
+
+/* ────────────────────────
+   POLLS
+──────────────────────── */
+function updPollPreview(){
+  var pv=$id('poll-preview');if(!pv)return;
+  var q=($id('cfg-poll_question')?$id('cfg-poll_question').value:cfg.poll_question)||'Who wins?';
+  var opts=[cfg.poll_a||'Option A',cfg.poll_b||'Option B'];
+  if(cfg.poll_c)opts.push(cfg.poll_c);if(cfg.poll_d)opts.push(cfg.poll_d);
+  var colors=['#e03030','#3b9eff','#26c96a','#f5c842'];
+  pv.innerHTML='<div style="font-size:11px;font-weight:800;color:var(--text);margin-bottom:10px">🗳️ '+q+'</div>'
+    +opts.map(function(o,i){return '<div style="margin-bottom:7px"><div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">'+o+'</div><div style="background:#1a1a1a;border-radius:20px;height:28px;display:flex;align-items:center;overflow:hidden"><div style="background:'+colors[i]+';height:100%;width:'+(25+i*5)+'%;min-width:40px;display:flex;align-items:center;padding:0 10px;font-size:10px;font-weight:800;color:#fff;border-radius:20px">'+(25+i*5)+'%</div></div></div>';}).join('')
+    +'<div style="font-size:9px;color:var(--muted);margin-top:6px">Tap to vote · Results update live</div>';
+}
+function loadPollResults(){
+  xhrReq('GET',fbPath('/s803polls/active'),null,function(text){
+    try{
+      var d=JSON.parse(text);if(!d||d.error)return;
+      var rl=$id('poll-results-live');if(!rl)return;
+      var votes={a:d.votes_a||0,b:d.votes_b||0,c:d.votes_c||0,d:d.votes_d||0};
+      var total=votes.a+votes.b+votes.c+votes.d||1;
+      var opts=[[cfg.poll_a||'A',votes.a,'#e03030'],[cfg.poll_b||'B',votes.b,'#3b9eff']];
+      if(cfg.poll_c)opts.push([cfg.poll_c,votes.c,'#26c96a']);if(cfg.poll_d)opts.push([cfg.poll_d,votes.d,'#f5c842']);
+      rl.innerHTML='<div style="font-size:10px;font-weight:800;color:var(--muted2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.1em">'+total+' total votes</div>'
+        +opts.map(function(o){var pct=Math.round(o[1]/total*100);return '<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="font-weight:700">'+o[0]+'</span><span style="color:'+o[2]+';font-weight:800">'+pct+'% ('+o[1]+')</span></div><div style="background:#1a1a1a;border-radius:4px;height:6px"><div style="background:'+o[2]+';border-radius:4px;height:6px;width:'+pct+'%"></div></div></div>';}).join('');
+    }catch(e){}
+  },function(){});
+}
+function resetPollVotes(){
+  if(!confirm('Reset all vote counts to zero?'))return;
+  ['votes_a','votes_b','votes_c','votes_d'].forEach(function(k){xhrReq('PUT',fbPath('/s803polls/active/'+k),0,function(){},function(){});});
+  setTimeout(function(){toast('🗑️ Poll votes reset','#26c96a');loadPollResults();},800);
+}
+
+/* ────────────────────────
+   STREAMS
+──────────────────────── */
+function buildStreamsEditor(){
+  var ed=$id('streams-editor');if(!ed)return;
+  var arr=cfg.stream_sources||[];
+  if(!arr.length){ed.innerHTML='<div style="font-size:11px;color:var(--muted);text-align:center;padding:14px">No streams yet</div>';return;}
+  ed.innerHTML=arr.map(function(s,i){
+    return '<div class="nav-item-row">'
+      +'<span class="nav-drag">⠿</span>'
+      +'<input class="si" style="width:42px;text-align:center;font-size:15px" placeholder="📺" value="'+esc(s.icon||'📺')+'" oninput="updStr('+i+',\'icon\',this.value)">'
+      +'<input class="si" style="width:90px" placeholder="Server 1" value="'+esc(s.label||'')+'" oninput="updStr('+i+',\'label\',this.value)">'
+      +'<input class="si" style="flex:1" placeholder="https://stream-url.com/embed/…" value="'+esc(s.url||'')+'" oninput="updStr('+i+',\'url\',this.value)">'
+      +'<select class="si" style="width:68px" onchange="updStr('+i+',\'quality\',this.value)"><option value="HD"'+(s.quality==='HD'?' selected':'')+'>HD</option><option value="SD"'+(s.quality==='SD'?' selected':'')+'>SD</option><option value="4K"'+(s.quality==='4K'?' selected':'')+'>4K</option></select>'
+      +'<button class="nav-del" onclick="delStr('+i+')">✕</button></div>';
+  }).join('');
+}
+function updStr(i,k,v){if(cfg.stream_sources&&cfg.stream_sources[i]){cfg.stream_sources[i][k]=v;lsSet('s803_v3_config',cfg);}}
+function delStr(i){cfg.stream_sources.splice(i,1);lsSet('s803_v3_config',cfg);buildStreamsEditor();}
+function addStream(){cfg.stream_sources=cfg.stream_sources||[];if(cfg.stream_sources.length>=8){toast('Maximum 8 stream sources','#f5c842');return;}cfg.stream_sources.push({icon:'📺',label:'Server '+(cfg.stream_sources.length+1),url:'',quality:'HD'});lsSet('s803_v3_config',cfg);buildStreamsEditor();}
+
+/* ────────────────────────
+   LANGUAGE
+──────────────────────── */
+var LANG_STRINGS={en:{watch_live:'Watch Live',scores:'Scores',saved:'Saved',alerts:'Alerts',live:'Live',home:'Home'},sw:{watch_live:'Tazama Sasa',scores:'Matokeo',saved:'Zilizohifadhiwa',alerts:'Tahadhari',live:'Moja Kwa Moja',home:'Nyumbani'},fr:{watch_live:'Regarder En Direct',scores:'Résultats',saved:'Sauvegardé',alerts:'Alertes',live:'En Direct',home:'Accueil'},ar:{watch_live:'شاهد الآن',scores:'النتائج',saved:'المحفوظة',alerts:'التنبيهات',live:'مباشر',home:'الرئيسية'},pt:{watch_live:'Assistir Ao Vivo',scores:'Resultados',saved:'Guardado',alerts:'Alertas',live:'Ao Vivo',home:'Início'},es:{watch_live:'Ver En Vivo',scores:'Resultados',saved:'Guardado',alerts:'Alertas',live:'En Vivo',home:'Inicio'}};
+function togLang(code,btn){cfg.lang_active=cfg.lang_active||['en'];var idx=cfg.lang_active.indexOf(code);if(idx!==-1&&code!=='en')cfg.lang_active.splice(idx,1);else if(idx===-1)cfg.lang_active.push(code);btn.classList.toggle('on',cfg.lang_active.indexOf(code)!==-1);lsSet('s803_v3_config',cfg);updLangPreview();}
+function updLangPreview(){
+  var pv=$id('lang-preview');if(!pv)return;
+  var def=($id('cfg-lang_default')?$id('cfg-lang_default').value:cfg.lang_default)||'en';
+  var active=cfg.lang_active||['en'];
+  var strings=LANG_STRINGS[def]||LANG_STRINGS.en;
+  pv.innerHTML='<div style="font-size:10px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">UI in '+def.toUpperCase()+'</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'+Object.keys(strings).map(function(k){return '<div style="background:#1a1a1a;border-radius:6px;padding:4px 8px;font-size:10px"><span style="color:var(--muted)">'+k+':</span> <strong>'+strings[k]+'</strong></div>';}).join('')+'</div>'
+    +'<div style="font-size:10px;color:var(--muted)">Active: '+active.map(function(c){return c.toUpperCase();}).join(', ')+'</div>';
+}
+
+/* ────────────────────────
+   COMMENTARY
+──────────────────────── */
+var commScore={home:0,away:0},commFeed=[];
+function adjScore(side,delta){commScore[side]=Math.max(0,(commScore[side]||0)+delta);var hEl=$id('comm-home-score'),aEl=$id('comm-away-score');if(hEl)hEl.textContent=commScore.home;if(aEl)aEl.textContent=commScore.away;cfg.commentary_home_score=commScore.home;cfg.commentary_away_score=commScore.away;lsSet('s803_v3_config',cfg);}
+function fillComm(min,type,text){var m=$id('comm-min'),t=$id('comm-type'),tx=$id('comm-text');if(m)m.value=min;if(t)t.value=type;if(tx)tx.value=text;}
+function initCommScores(){
+  commScore.home=cfg.commentary_home_score||0;commScore.away=cfg.commentary_away_score||0;
+  var match=cfg.commentary_match||'';var parts=match.split(' vs ');
+  var hN=$id('comm-home-name'),aN=$id('comm-away-name');
+  if(hN)hN.textContent=parts[0]||'Home';if(aN)aN.textContent=parts[1]||'Away';
+  var hEl=$id('comm-home-score'),aEl=$id('comm-away-score');
+  if(hEl)hEl.textContent=commScore.home;if(aEl)aEl.textContent=commScore.away;
+}
+function pushComment(){
+  var min=($id('comm-min')?$id('comm-min').value:'').trim();
+  var type=$id('comm-type')?$id('comm-type').value:'update';
+  var text=($id('comm-text')?$id('comm-text').value:'').trim();
+  if(!text){toast('⚠️ Enter commentary text first','#f5c842');return;}
+  var entry={min:min,type:type,text:text,ts:Date.now(),score:commScore.home+'-'+commScore.away};
+  xhrReq('GET',fbPath('/s803commentary'),null,function(text2){
+    var existing=[];try{var d=JSON.parse(text2);if(Array.isArray(d))existing=d;}catch(e){}
+    existing.unshift(entry);existing=existing.slice(0,50);
+    xhrReq('PUT',fbPath('/s803commentary'),existing,function(){toast('📡 Commentary pushed live!','#26c96a');commFeed=existing;renderCommFeed();var tx=$id('comm-text');if(tx)tx.value='';},function(st){toast('❌ Firebase error '+st,'#e03030');});
+  },function(){xhrReq('PUT',fbPath('/s803commentary'),[entry],function(){toast('📡 Commentary pushed live!','#26c96a');commFeed=[entry];renderCommFeed();var tx=$id('comm-text');if(tx)tx.value='';},function(st){toast('❌ Firebase error '+st,'#e03030');});});
+}
+function renderCommFeed(){
+  var feed=$id('commentary-feed');if(!feed)return;
+  var cnt=$id('comm-count');
+  if(!commFeed.length){feed.innerHTML='<div class="card" style="font-size:11px;color:var(--muted)">No updates yet</div>';if(cnt)cnt.textContent='';return;}
+  if(cnt)cnt.textContent='('+commFeed.length+' updates)';
+  var icons={goal:'⚽',yellowcard:'🟨',redcard:'🟥',sub:'🔄',var:'📺',ht:'🔔',ft:'🏁',ko:'🟢',update:'📝'};
+  var colors={goal:'#26c96a',yellowcard:'#f5c842',redcard:'#e03030',sub:'#3b9eff',var:'#a855f7',ht:'#f5c842',ft:'#3b9eff',ko:'#26c96a',update:'#555'};
+  feed.innerHTML=commFeed.slice(0,20).map(function(e){
+    var ic=icons[e.type]||'📝',col=colors[e.type]||'#555';
+    var t=new Date(e.ts);var ts=t.getHours()+':'+String(t.getMinutes()).padStart(2,'0');
+    return '<div class="card" style="border-left:3px solid '+col+';padding:10px 12px">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+      +(e.min?'<span style="font-size:10px;font-weight:800;color:var(--ac);min-width:28px">'+e.min+'</span>':'')
+      +'<span style="font-size:12px">'+ic+'</span>'
+      +'<span style="font-size:10px;font-weight:800;color:'+col+';text-transform:uppercase;flex:1">'+e.type+'</span>'
+      +'<span style="font-size:9px;color:var(--muted2)">'+ts+'</span>'
+      +(e.score&&e.score!=='0-0'?'<span style="font-size:10px;font-weight:800;background:#1a1a1a;padding:2px 6px;border-radius:4px">'+e.score+'</span>':'')
+      +'</div><div style="font-size:12px;color:var(--text);line-height:1.5">'+e.text+'</div></div>';
+  }).join('');
+}
+function loadCommFeed(){xhrReq('GET',fbPath('/s803commentary'),null,function(text){try{var d=JSON.parse(text);if(Array.isArray(d)){commFeed=d;renderCommFeed();}}catch(e){}},function(){});}
+function clearCommentary(){if(!confirm('Clear all commentary?'))return;xhrReq('PUT',fbPath('/s803commentary'),[],function(){commFeed=[];renderCommFeed();toast('🗑️ Commentary cleared','#787470');},function(st){toast('❌ Error '+st,'#e03030');});}
+
+/* ────────────────────────
+   VIEWS / SHARES
+──────────────────────── */
+function fmtNum(n){return !n?'0':n>=1000?(n/1000).toFixed(1).replace(/\.0$/,'')+'K':String(n);}
+function relTime(iso){try{var d=Date.now()-new Date(iso).getTime();if(d<60000)return'Just now';if(d<3600000)return Math.floor(d/60000)+'m ago';if(d<86400000)return Math.floor(d/3600000)+'h ago';return Math.floor(d/86400000)+'d ago';}catch(e){return iso||'';}}
+
+function loadViews(){
+  $id('views-card').innerHTML='<div class="empty-state"><span class="ei">⏳</span>Loading…</div>';
+  xhrReq('GET',fbPath('/s803views'),null,function(text){
+    try{
+      var d=JSON.parse(text);
+      if(!d||typeof d!=='object'||Object.keys(d).length===0){$id('views-card').innerHTML='<div class="empty-state"><span class="ei">📭</span>No view data yet</div>';return;}
+      var items=Object.keys(d).map(function(k){return{key:k,count:d[k].count||0,title:d[k].title||k,last:d[k].lastSeen||''};}).sort(function(a,b){return b.count-a.count;});
+      $id('views-card').innerHTML='<div class="data-table-wrap"><table class="dt"><thead><tr><th>#</th><th>Post Slug</th><th>Views</th><th>Last Seen</th></tr></thead><tbody>'
+        +items.map(function(item,i){return '<tr><td><strong>'+(i+1)+'</strong></td><td class="td-mono">'+esc(decodeURIComponent(item.key))+'</td><td><strong>'+fmtNum(item.count)+'</strong></td><td>'+esc(relTime(item.last))+'</td></tr>';}).join('')
+        +'</tbody></table></div>';
+    }catch(e){$id('views-card').innerHTML='<div class="empty-state"><span class="ei">⚠️</span>Parse error</div>';}
+  },function(st){$id('views-card').innerHTML='<div class="empty-state"><span class="ei">📡</span>Firebase error '+st+'</div>';});
+}
+function clearViews(){if(!confirm('Clear all post view counts from Firebase?'))return;xhrReq('DELETE',fbPath('/s803views'),null,function(){$id('views-card').innerHTML='<div class="empty-state"><span class="ei">✅</span>Views cleared</div>';toast('🗑 View counts cleared');},function(){toast('❌ Failed to clear','#e03030');});}
+
+function loadShares(){
+  $id('shares-card').innerHTML='<div class="empty-state"><span class="ei">⏳</span>Loading…</div>';
+  xhrReq('GET',fbPath('/s803shares'),null,function(text){
+    try{
+      var d=JSON.parse(text);
+      if(!d||typeof d!=='object'||Object.keys(d).length===0){$id('shares-card').innerHTML='<div class="empty-state"><span class="ei">📭</span>No share data yet</div>';return;}
+      var items=Object.keys(d).map(function(k){return{key:k,total:d[k].total||0,wa:d[k].wa||0,fb:d[k].fb||0,x:d[k].x||0,copy:d[k].copy||0};}).sort(function(a,b){return b.total-a.total;});
+      $id('shares-card').innerHTML='<div class="data-table-wrap"><table class="dt"><thead><tr><th>#</th><th>Slug</th><th>Total</th><th>WA</th><th>FB</th><th>X</th><th>Copy</th></tr></thead><tbody>'
+        +items.map(function(item,i){return '<tr><td><strong>'+(i+1)+'</strong></td><td class="td-mono">'+esc(decodeURIComponent(item.key))+'</td><td><strong>'+fmtNum(item.total)+'</strong></td><td>'+fmtNum(item.wa)+'</td><td>'+fmtNum(item.fb)+'</td><td>'+fmtNum(item.x)+'</td><td>'+fmtNum(item.copy)+'</td></tr>';}).join('')
+        +'</tbody></table></div>';
+    }catch(e){$id('shares-card').innerHTML='<div class="empty-state"><span class="ei">⚠️</span>Parse error</div>';}
+  },function(st){$id('shares-card').innerHTML='<div class="empty-state"><span class="ei">📡</span>Firebase error '+st+'</div>';});
+}
+function clearShares(){if(!confirm('Clear all share counts from Firebase?'))return;xhrReq('DELETE',fbPath('/s803shares'),null,function(){$id('shares-card').innerHTML='<div class="empty-state"><span class="ei">✅</span>Shares cleared</div>';toast('🗑 Share counts cleared');},function(){toast('❌ Failed to clear','#e03030');});}
+
+/* ────────────────────────
+   SECURITY
+──────────────────────── */
+var pinVisible=false,currentPin='';
+function loadSecurity(){
+  xhrReq('GET',fbPath('/s803config/VIP_PIN'),null,function(text){
+    try{var p=JSON.parse(text);if(p!==null){currentPin=String(p);$id('pin-display-val').textContent='••••';}}catch(e){}
+  },function(){});
+  $id('sec-events').innerHTML='<div class="empty-state"><span class="ei">⏳</span>Loading…</div>';
+  xhrReq('GET',fbPath('/s803security/pin_lockouts'),null,function(text){
+    try{
+      var d=JSON.parse(text);
+      if(!d||typeof d!=='object'||Object.keys(d).length===0){$id('sec-events').innerHTML='<div class="empty-state"><span class="ei">✅</span>No lockout events</div>';return;}
+      var items=Object.entries(d).sort(function(a,b){return(b[1].ts||'').localeCompare(a[1].ts||'');}).slice(0,20);
+      $id('sec-events').innerHTML=items.map(function(entry){var item=entry[1];return '<div class="sec-item"><div class="sec-item-icon">🚨</div><div><div class="sec-item-title">PIN lockout triggered</div><div class="sec-item-meta">'+esc((item.ts||'').replace('T',' ').split('.')[0])+(item.ua?' — '+esc(item.ua.substring(0,55)):'')+'</div></div></div>';}).join('');
+    }catch(e){$id('sec-events').innerHTML='<div class="empty-state"><span class="ei">⚠️</span>Parse error</div>';}
+  },function(){$id('sec-events').innerHTML='<div class="empty-state"><span class="ei">📡</span>Could not connect</div>';});
+}
+function togglePinReveal(){
+  pinVisible=!pinVisible;
+  var el=$id('pin-display-val');
+  if(el)el.textContent=pinVisible?(currentPin||cfg.VIP_PIN||'????'):'••••';
+}
+function updatePin(){
+  var np=($id('new-pin-input')||{}).value||'';
+  var nc=($id('new-pin-confirm')||{}).value||'';
+  var msg=$id('pin-change-msg');
+  if(!/^\d{4}$/.test(np)){if(msg){msg.style.color='var(--ac)';msg.textContent='PIN must be exactly 4 digits.';}return;}
+  if(np!==nc){if(msg){msg.style.color='var(--ac)';msg.textContent='PINs do not match.';}return;}
+  xhrReq('PUT',fbPath('/s803config/VIP_PIN'),np,function(){
+    currentPin=np;cfg.VIP_PIN=np;lsSet('s803_v3_config',cfg);lsSetStr('s803_panel_pin_cache',np);
+    if(msg){msg.style.color='#26c96a';msg.textContent='✅ PIN updated successfully!';}
+    $id('new-pin-input').value='';$id('new-pin-confirm').value='';
+    $id('pin-display-val').textContent='••••';pinVisible=false;
+    toast('🔑 VIP PIN updated in Firebase','#26c96a');
+  },function(){if(msg){msg.style.color='var(--ac)';msg.textContent='Failed to update PIN.';}});
+}
+function clearSecEvents(){if(!confirm('Clear security log from Firebase?'))return;xhrReq('DELETE',fbPath('/s803security/pin_lockouts'),null,function(){$id('sec-events').innerHTML='<div class="empty-state"><span class="ei">✅</span>Security log cleared</div>';toast('🗑 Security log cleared');},function(){toast('❌ Failed','#e03030');});}
+
+/* ────────────────────────
+   ERRORS
+──────────────────────── */
+function loadErrors(){
+  $id('errors-list').innerHTML='<div class="empty-state"><span class="ei">⏳</span>Loading…</div>';
+  xhrReq('GET',fbPath('/s803errors'),null,function(text){
+    try{
+      var d=JSON.parse(text);
+      if(!d||typeof d!=='object'||Object.keys(d).length===0){$id('errors-list').innerHTML='<div class="empty-state"><span class="ei">✅</span>No errors logged — clean site!</div>';return;}
+      var all=[];
+      Object.values(d).forEach(function(item){var errs=item.errors||[item];errs.forEach(function(er){all.push({msg:er.msg||'?',type:er.type||'js',file:er.file||'',line:er.line||'',ts:item.ts||er.ts||''});});});
+      all.sort(function(a,b){return(b.ts||'').localeCompare(a.ts||'');});
+      $id('errors-list').innerHTML=all.slice(0,50).map(function(e){
+        return '<div class="err-item"><div class="err-msg">'+esc(e.msg.substring(0,100))+'</div>'
+          +'<div class="err-meta"><span style="background:rgba(224,48,48,.1);color:var(--ac);border:1px solid rgba(224,48,48,.2);border-radius:3px;padding:1px 5px;font-size:9px;font-weight:800">'+esc(e.type)+'</span>'
+          +(e.file?'<span>'+esc(e.file)+(e.line?':'+e.line:'')+'</span>':'')
+          +'<span>'+esc(relTime(e.ts))+'</span></div></div>';
+      }).join('');
+    }catch(e){$id('errors-list').innerHTML='<div class="empty-state"><span class="ei">⚠️</span>Parse error</div>';}
+  },function(st){$id('errors-list').innerHTML='<div class="empty-state"><span class="ei">📡</span>Firebase error '+st+'</div>';});
+}
+function clearErrors(){if(!confirm('Clear all JS error logs from Firebase?'))return;xhrReq('DELETE',fbPath('/s803errors'),null,function(){$id('errors-list').innerHTML='<div class="empty-state"><span class="ei">✅</span>Error log cleared</div>';toast('🗑 Error log cleared');},function(){toast('❌ Failed','#e03030');});}
+
+/* ────────────────────────
+   RAW CONFIG
+──────────────────────── */
+function loadRawConfig(){
+  $id('raw-json-box').textContent='Fetching from Firebase…';
+  xhrReq('GET',fbEndpoint(),null,function(text){
+    try{var d=JSON.parse(text);$id('raw-json-box').textContent=JSON.stringify(d,null,2);}
+    catch(e){$id('raw-json-box').textContent='Error: could not parse response';}
+  },function(st){$id('raw-json-box').textContent='Error: Firebase returned '+st;});
+}
+function copyRawJson(){
+  var txt=$id('raw-json-box').textContent;
+  navigator.clipboard.writeText(txt).then(function(){toast('📋 Copied to clipboard');}).catch(function(){toast('❌ Use Ctrl+A, Ctrl+C to copy','#f5c842');});
+}
+function importJson(){
+  var txt=($id('import-json')||{}).value||'';
+  if(!txt){toast('⚠️ Paste JSON first','#f5c842');return;}
+  try{
+    var data=JSON.parse(txt);
+    if(!confirm('⚠️ This will OVERWRITE your entire Firebase /s803config. Continue?'))return;
+    xhrReq('PUT',fbEndpoint(),data,function(){
+      toast('✅ Config imported and pushed to Firebase!','#26c96a');
+      cfg=objAssign(DEF,data);lsSet('s803_v3_config',cfg);
+      fillAll();buildLeagues();buildSwatches();buildNavEditor();setAc(ACCENTS[cfg.accent_color]||'#e03030');
+      loadRawConfig();
+    },function(){toast('❌ Import failed','#e03030');});
+  }catch(e){toast('❌ Invalid JSON — check syntax','#e03030');}
+}
+
+/* ────────────────────────
+   UTILS
+──────────────────────── */
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* Ctrl+S → push */
+document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();pushFB();}});
+
+/* ────────────────────────
+   DOMContentLoaded
+──────────────────────── */
+document.addEventListener('DOMContentLoaded',function(){
+  /* Sync lang toggle states */
+  var active=cfg.lang_active||['en'];
+  ['en','sw','fr','ar','pt','es'].forEach(function(c){var btn=$id('tog-lang_'+c);if(btn)btn.classList.toggle('on',active.indexOf(c)!==-1);});
+});
+
+</script>
+</body>
+</html>
