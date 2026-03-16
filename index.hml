@@ -1793,6 +1793,439 @@ document.addEventListener('DOMContentLoaded',function(){
   ['en','sw','fr','ar','pt','es'].forEach(function(c){var btn=$id('tog-lang_'+c);if(btn)btn.classList.toggle('on',active.indexOf(c)!==-1);});
 });
 
+
+
+/* ════════════════════════════════════════════════════════
+   SPORTS 803 PANEL — v4.1 HOTFIX PATCH
+   Paste this block at the END of your existing <script>,
+   just before </script>. It overrides the broken functions.
+════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────
+   FIX 1: xhrReq — falsy body bug
+   Original: x.send(body ? JSON.stringify(body) : null)
+   Bug: body=0, body=false, body="" are falsy so null is
+   sent instead. Firebase then DELETES the node.
+   Fix: explicit null/undefined check.
+───────────────────────────────────────────────────── */
+xhrReq = function(method, url, body, onOk, onErr) {
+  var x = new XMLHttpRequest();
+  x.open(method, url, true);
+  /* Always set Content-Type for PUT/POST */
+  if (method === 'PUT' || method === 'POST') {
+    x.setRequestHeader('Content-Type', 'application/json');
+  }
+  x.onreadystatechange = function() {
+    if (x.readyState !== 4) return;
+    if (x.status >= 200 && x.status < 300) onOk(x.responseText, x.status);
+    else onErr(x.status, x.responseText);
+  };
+  x.onerror = function() { onErr(0, 'Network error'); };
+  /* Fixed: use explicit check instead of truthy/falsy */
+  x.send((body !== null && body !== undefined) ? JSON.stringify(body) : null);
+};
+
+/* ─────────────────────────────────────────────────────
+   FIX 2: resetPollVotes — now correctly sends 0
+   The old call passed `0` as body which was falsy.
+───────────────────────────────────────────────────── */
+resetPollVotes = function() {
+  if (!confirm('Reset all vote counts to zero?')) return;
+  var keys = ['votes_a', 'votes_b', 'votes_c', 'votes_d'];
+  var done = 0;
+  keys.forEach(function(k) {
+    xhrReq('PUT', fbPath('/s803polls/active/' + k), 0,
+      function() { if (++done === keys.length) { toast('🗑️ Poll votes reset to zero', '#26c96a'); loadPollResults(); } },
+      function() { toast('❌ Failed to reset poll votes', '#e03030'); }
+    );
+  });
+};
+
+/* ─────────────────────────────────────────────────────
+   FIX 3: checkLoginPin — wrong-PIN + offline = still
+   logged in. Now requires cached PIN to match.
+───────────────────────────────────────────────────── */
+checkLoginPin = function() {
+  if (Date.now() < loginLock) {
+    $id('login-err').textContent = 'Too many attempts. Wait ' + Math.ceil((loginLock - Date.now()) / 1000) + 's.';
+    loginEntry = ''; updLoginDots(); return;
+  }
+  fbUrl = ($id('login-fb-url').value || '').trim().replace(/\/$/, '');
+  lsSetStr('s803_fb_url', fbUrl);
+  setFbStatus('loading', 'Verifying…');
+
+  xhrReq('GET', fbUrl + '/s803config/VIP_PIN.json', null,
+    function(text) {
+      try {
+        var pin = JSON.parse(text);
+        if (pin === null || pin === undefined) {
+          /* No PIN stored in Firebase — allow local config only */
+          doLoginSuccess(true);
+          return;
+        }
+        loginActualPin = String(pin);
+        lsSetStr('s803_panel_pin_cache', loginActualPin);
+        if (String(loginEntry) === loginActualPin) {
+          loginAttempts = 0;
+          doLoginSuccess(false);
+        } else {
+          loginAttempts++;
+          if (loginAttempts >= 5) { loginLock = Date.now() + 30000; loginAttempts = 0; }
+          document.querySelectorAll('#login-pin-dots .pin-dot-l').forEach(function(d) { d.classList.add('error'); });
+          setTimeout(function() { document.querySelectorAll('#login-pin-dots .pin-dot-l').forEach(function(d) { d.classList.remove('error'); }); }, 400);
+          $id('login-err').textContent = loginAttempts >= 4 ? '1 attempt left!' : 'Incorrect PIN';
+          loginEntry = ''; updLoginDots();
+          setFbStatus('err', 'Wrong PIN');
+        }
+      } catch(e) { doLoginSuccess(true); }
+    },
+    function() {
+      /* Firebase unreachable — check against cached PIN */
+      var cached = lsGetStr('s803_panel_pin_cache', '');
+      if (cached && String(loginEntry) === cached) {
+        doLoginSuccess(true);
+        toast('⚠️ Firebase offline — using cached PIN', '#f5c842');
+      } else {
+        $id('login-err').textContent = cached
+          ? 'Firebase offline and PIN does not match cached value.'
+          : 'Firebase offline — set your PIN first when online, then try again.';
+        loginEntry = ''; updLoginDots();
+        setFbStatus('err', 'Offline');
+      }
+    }
+  );
+};
+
+/* ─────────────────────────────────────────────────────
+   FIX 4: initApp — auto-verify Firebase + pre-load
+   summary stats on startup, not just on tab click.
+───────────────────────────────────────────────────── */
+var _origInitApp = initApp;
+initApp = function() {
+  _origInitApp();
+  /* Verify connection and load summary counts */
+  setTimeout(function() {
+    autoLoadSummary();
+  }, 500);
+};
+
+function autoLoadSummary() {
+  /* Quick stats for bottom bar / header hint */
+  xhrReq('GET', fbPath('/s803views'), null, function(text) {
+    try {
+      var d = JSON.parse(text);
+      if (d && typeof d === 'object') {
+        var total = Object.keys(d).reduce(function(sum, k) {
+          return sum + (parseInt((d[k] && d[k].count) || d[k] || 0, 10));
+        }, 0);
+        if (total > 0) {
+          setFbStatus('ok', 'Connected · ' + total + ' views');
+        }
+      }
+    } catch(e) {}
+  }, function() {});
+}
+
+/* ─────────────────────────────────────────────────────
+   FIX 5: loadViews — better empty state with
+   actionable guidance, plus show Firebase path.
+───────────────────────────────────────────────────── */
+loadViews = function() {
+  var card = $id('views-card');
+  card.innerHTML = '<div class="empty-state"><span class="ei">⏳</span>Loading from Firebase…</div>';
+
+  var url = fbPath('/s803views');
+
+  xhrReq('GET', url, null, function(text) {
+    try {
+      var d = JSON.parse(text);
+
+      if (!d || typeof d !== 'object' || Object.keys(d).length === 0) {
+        card.innerHTML =
+          '<div class="empty-state"><span class="ei">📭</span>No view data yet</div>'
+          + '<div class="card al-gold" style="margin-top:8px">'
+          + '<div style="font-size:11px;color:var(--text2);line-height:1.7">'
+          + '<strong style="color:#f5c842">Why is this empty?</strong><br/>'
+          + '1. Make sure you applied <strong>theme-s803-fixes.xml</strong> to your Blogger theme<br/>'
+          + '2. Visit a post page (not the homepage) — the tracker only fires on post pages<br/>'
+          + '3. Refresh the panel after visiting a post<br/>'
+          + '4. Check Firebase Rules: <code style="color:#f5c842">.write</code> must be <code style="color:#f5c842">true</code>'
+          + '</div></div>'
+          + '<div style="font-size:9px;color:var(--muted);margin-top:6px;font-family:monospace">Queried: ' + url + '</div>';
+        return;
+      }
+
+      var items = Object.keys(d).map(function(k) {
+        var v = d[k];
+        if (typeof v === 'number') return { key: k, count: v, title: k, last: '' };
+        return { key: k, count: v.count || 0, title: v.title || k, last: v.lastSeen || '' };
+      }).sort(function(a, b) { return b.count - a.count; });
+
+      var totalViews = items.reduce(function(s, i) { return s + i.count; }, 0);
+
+      card.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        + '<span style="font-size:11px;color:var(--muted)">' + items.length + ' posts · ' + fmtNum(totalViews) + ' total views</span>'
+        + '<button onclick="loadViews()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer">🔄</button>'
+        + '</div>'
+        + '<div class="data-table-wrap"><table class="dt">'
+        + '<thead><tr><th>#</th><th>Post</th><th>Views</th><th>Last Seen</th></tr></thead><tbody>'
+        + items.map(function(item, i) {
+            var slug = '';
+            try { slug = decodeURIComponent(item.key); } catch(e) { slug = item.key; }
+            return '<tr>'
+              + '<td><strong>' + (i + 1) + '</strong></td>'
+              + '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + slug + '">'
+              + '<div style="font-size:11px;font-weight:600;color:var(--text)">' + (item.title !== item.key ? item.title.substring(0, 40) : slug.substring(0, 40)) + '</div>'
+              + '<div class="td-mono" style="font-size:9px;color:var(--muted)">' + slug.substring(0, 40) + '</div>'
+              + '</td>'
+              + '<td><strong>' + fmtNum(item.count) + '</strong></td>'
+              + '<td style="font-size:10px">' + (item.last ? relTime(item.last) : '—') + '</td>'
+              + '</tr>';
+          }).join('')
+        + '</tbody></table></div>';
+
+    } catch(e) {
+      card.innerHTML = '<div class="empty-state"><span class="ei">⚠️</span>Could not parse Firebase response</div>'
+        + '<div style="font-size:9px;color:var(--muted);margin-top:6px;font-family:monospace">URL: ' + url + '</div>';
+    }
+  }, function(st) {
+    var msg = st === 401 || st === 403
+      ? 'Permission denied — set <strong>.read: true</strong> in Firebase Rules'
+      : st === 0 ? 'Cannot reach Firebase — check your URL and network' : 'Firebase error ' + st;
+    card.innerHTML =
+      '<div class="empty-state"><span class="ei">📡</span><div>' + msg + '</div></div>'
+      + '<div style="font-size:9px;color:var(--muted);margin-top:6px;font-family:monospace">URL: ' + url + '</div>';
+  });
+};
+
+/* ─────────────────────────────────────────────────────
+   FIX 6: loadAnalytics — better empty state + show
+   why it might be empty.
+───────────────────────────────────────────────────── */
+var _origLoadAnalytics = loadAnalytics;
+loadAnalytics = function() {
+  toast('🔄 Loading analytics…', '#3b9eff');
+  xhrReq('GET', fbPath('/s803analytics'), null, function(text) {
+    try {
+      var d = JSON.parse(text);
+      if (!d || d.error) {
+        /* Show guidance */
+        var tp = $id('an-posts');
+        if (tp) tp.innerHTML =
+          '<div style="font-size:11px;color:var(--text2);line-height:1.7">'
+          + '<strong style="color:#f5c842">No analytics data yet.</strong><br/>'
+          + '• Apply <strong>theme-s803-fixes.xml</strong> to your Blogger theme<br/>'
+          + '• Enable "Analytics Collection" toggle on this tab<br/>'
+          + '• Then visit your site — data records automatically'
+          + '</div>';
+        toast('No analytics data yet — check theme setup', '#f5c842');
+        return;
+      }
+      /* Delegate to original function logic */
+      var s  = $id('an-sessions'),  pv = $id('an-pageviews');
+      var inst = $id('an-installs'), vip = $id('an-vip');
+      if (s)    s.textContent    = (d.total_sessions    || 0).toLocaleString();
+      if (pv)   pv.textContent   = (d.total_pageviews   || 0).toLocaleString();
+      if (inst) inst.textContent = (d.total_installs    || 0).toLocaleString();
+      if (vip)  vip.textContent  = (d.total_vip_unlocks || 0).toLocaleString();
+
+      var dv = $id('an-devices');
+      if (dv && d.devices) {
+        var tot = Object.keys(d.devices).reduce(function(a, k) { return a + (d.devices[k] || 0); }, 0) || 1;
+        dv.innerHTML = Object.keys(d.devices).map(function(dk) {
+          var pct = Math.round(d.devices[dk] / tot * 100);
+          var ic  = dk === 'android' ? '🤖' : dk === 'ios' ? '🍎' : '🖥️';
+          return '<div style="margin-bottom:8px">'
+            + '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">'
+            + '<span>' + ic + ' ' + dk.charAt(0).toUpperCase() + dk.slice(1) + '</span>'
+            + '<span style="font-weight:700">' + pct + '%</span></div>'
+            + '<div style="background:#1a1a1a;border-radius:4px;height:6px">'
+            + '<div style="background:var(--ac);border-radius:4px;height:6px;width:' + pct + '%"></div></div></div>';
+        }).join('');
+      }
+
+      var tp = $id('an-posts');
+      if (tp && d.top_posts) {
+        var posts = Object.keys(d.top_posts)
+          .sort(function(a, b) { return d.top_posts[b] - d.top_posts[a]; })
+          .slice(0, 5);
+        tp.innerHTML = posts.map(function(url, i) {
+          var parts = url.split('/');
+          var slug  = parts[parts.length - 1] || parts[parts.length - 2] || url;
+          return '<div class="snap-row">'
+            + '<code class="snap-key" style="min-width:20px">#' + (i + 1) + '</code>'
+            + '<span class="snap-val" style="font-size:10px">' + slug + '</span>'
+            + '<span class="snap-desc">' + d.top_posts[url] + ' views</span>'
+            + '</div>';
+        }).join('');
+      }
+      toast('✅ Analytics loaded!', '#26c96a');
+    } catch(e) {
+      toast('❌ Could not parse analytics response', '#e03030');
+    }
+  }, function(st) {
+    var msg = st === 401 || st === 403
+      ? '❌ Firebase permission denied — set .read: true'
+      : st === 0 ? '❌ Cannot reach Firebase' : '❌ Firebase error ' + st;
+    toast(msg, '#e03030');
+  });
+};
+
+/* ─────────────────────────────────────────────────────
+   FIX 7: fb-dot — resolve 'loading' state on init
+   by doing a quick read-test on app start.
+───────────────────────────────────────────────────── */
+var _origDoLoginSuccess = doLoginSuccess;
+doLoginSuccess = function(offline) {
+  _origDoLoginSuccess(offline);
+  if (!offline) {
+    /* Quick read test to confirm connection */
+    setTimeout(function() {
+      xhrReq('GET', (fbUrl || FB_URL).replace(/\/$/, '') + '/s803config/app_name.json', null,
+        function() { setFbStatus('ok', 'Connected'); },
+        function(st) {
+          if (st === 401 || st === 403) setFbStatus('err', 'Rules not set');
+          else setFbStatus('err', 'Unreachable');
+        }
+      );
+    }, 300);
+  }
+};
+
+
+/* ════════════════════════════════════════════════════════════
+   SPORTS 803 — NAV MENU FIX (panel-nav-fix.js)
+
+   Paste at the END of your panel's <script> block,
+   just before </script>.
+
+   Fixes:
+   ✅ Label inputs were 72px wide — labels got cut off ("wrong")
+   ✅ Icon inputs were 42px — emoji sequences clipped
+   ✅ Nav item IDs now shown so you know which item maps to what
+   ✅ pullFB correctly syncs nav_items from Firebase
+════════════════════════════════════════════════════════════ */
+
+/* ─── Correct default nav_items — IDs match the theme's actual elements ─── */
+DEF.nav_items = [
+  { icon: '🏠', label: 'Home',   href: 'https://sports803livestream.blogspot.com/',                      id: 'home'   },
+  { icon: '📺', label: 'Live',   href: 'https://sports803livestream.blogspot.com/search/label/Live%20TV', id: 'live'   },
+  { icon: '⚽', label: 'Scores', href: '#scores',                                                         id: 'scores' },
+  { icon: '🔖', label: 'Saved',  href: '#saved',                                                          id: 'bkm'    },
+  { icon: '🔔', label: 'Alerts', href: '#alerts',                                                         id: 'bell'   }
+];
+
+/* Patch existing cfg if it has the old mismatched IDs */
+(function patchNavIds() {
+  var ID_MAP = { saved: 'bkm', alerts: 'bell', scores: 'scores', live: 'live', home: 'home' };
+  var items = cfg.nav_items || [];
+  items.forEach(function(item) {
+    if (item.id && ID_MAP[item.id]) item.id = ID_MAP[item.id];
+  });
+  lsSet('s803_v3_config', cfg);
+})();
+
+/* ─── Fixed buildNavEditor — wider inputs, shows ID, no truncation ─── */
+buildNavEditor = function() {
+  var ed = $id('nav-editor');
+  if (!ed) return;
+  ed.innerHTML = '';
+
+  var items = cfg.nav_items || [];
+
+  if (!items.length) {
+    ed.innerHTML = '<div style="font-size:11px;color:var(--muted);text-align:center;padding:14px">No nav items — add one below</div>';
+    return;
+  }
+
+  var THEME_IDS = {
+    home:   { label: 'nav-home  (Home link)',   desc: 'First nav item — always a link' },
+    live:   { label: 'nav-live  (Live TV)',      desc: 'Opens live TV label feed' },
+    scores: { label: 'nav-scores (Scores)',      desc: 'Opens scores panel' },
+    bkm:    { label: 'nav-bkm  (Saved)',         desc: 'Opens bookmarks panel' },
+    bell:   { label: 'nav-bell  (Alerts)',        desc: 'Opens push notification prompt' },
+    excl:   { label: 'nav-excl  (VIP)',           desc: 'Hidden — shown only to VIP users' }
+  };
+
+  items.forEach(function(item, i) {
+    var themeInfo = THEME_IDS[item.id] || { label: 'nav-' + (item.id || i), desc: 'Custom item' };
+
+    var row = document.createElement('div');
+    row.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:10px;margin-bottom:8px';
+
+    /* Top row: drag + icon + label + href + delete */
+    var topRow = document.createElement('div');
+    topRow.style.cssText = 'display:flex;align-items:center;gap:7px';
+    topRow.innerHTML =
+      '<span style="color:var(--muted2);cursor:grab;font-size:14px;flex-shrink:0">⠿</span>'
+
+      /* Icon input — wider */
+      + '<div style="flex-shrink:0">'
+      +   '<div style="font-size:8px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Icon</div>'
+      +   '<input class="si" style="width:54px;text-align:center;font-size:18px;padding:5px 3px" '
+      +     'value="' + escAttr(item.icon || '') + '" '
+      +     'placeholder="🏠" '
+      +     'oninput="updNav(' + i + ',\'icon\',this.value)">'
+      + '</div>'
+
+      /* Label input — wider */
+      + '<div style="flex:1;min-width:80px;max-width:130px">'
+      +   '<div style="font-size:8px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Label</div>'
+      +   '<input class="si" style="width:100%" '
+      +     'value="' + escAttr(item.label || '') + '" '
+      +     'placeholder="Label" '
+      +     'oninput="updNav(' + i + ',\'label\',this.value)">'
+      + '</div>'
+
+      /* Href input — flex */
+      + '<div style="flex:2;min-width:0">'
+      +   '<div style="font-size:8px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em">Link / Action</div>'
+      +   '<input class="si" style="width:100%" '
+      +     'value="' + escAttr(item.href || '') + '" '
+      +     'placeholder="https://… or #scores / #saved / #alerts" '
+      +     'oninput="updNav(' + i + ',\'href\',this.value)">'
+      + '</div>'
+
+      + '<button style="background:rgba(224,48,48,.08);border:1px solid rgba(224,48,48,.2);color:#e03030;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;flex-shrink:0;transition:all .15s;align-self:flex-end" onclick="delNav(' + i + ')">✕</button>';
+
+    row.appendChild(topRow);
+
+    /* Bottom hint: which theme element this maps to */
+    var hint = document.createElement('div');
+    hint.style.cssText = 'margin-top:6px;display:flex;align-items:center;gap:6px;font-size:9px;color:var(--muted)';
+    hint.innerHTML =
+      '<code style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 5px;color:#3b9eff;font-size:9px">' + themeInfo.label + '</code>'
+      + '<span>' + themeInfo.desc + '</span>'
+      + (item.href === '#scores' || item.href === '#saved' || item.href === '#alerts'
+        ? '<span style="background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.2);color:#f5c842;border-radius:3px;padding:1px 5px">special action — link ignored by theme</span>'
+        : '');
+    row.appendChild(hint);
+
+    ed.appendChild(row);
+  });
+};
+
+/* ─── Helper: escape for HTML attribute values ─── */
+function escAttr(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* ─── Re-render nav editor now ─── */
+if (document.getElementById('nav-editor')) {
+  buildNavEditor();
+}
+
+/* ─── Override pullFB to also re-render nav editor after load ─── */
+var _origPullFB = pullFB;
+pullFB = function() {
+  _origPullFB();
+  /* Wait for the XHR to complete then rebuild nav editor */
+  setTimeout(function() {
+    if (document.querySelector('#tab-nav.active')) buildNavEditor();
+  }, 1200);
+};
+
 </script>
 </body>
 </html>
